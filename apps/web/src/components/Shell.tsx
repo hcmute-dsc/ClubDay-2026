@@ -1,12 +1,21 @@
 import type { ReactNode } from 'react';
 
 /** Khung màn hình chung — giữ bố cục nhất quán trên điện thoại. */
-export function Shell({ children, wide = false }: { children: ReactNode; wide?: boolean }) {
+export function Shell({
+  children,
+  wide = false,
+  full = false,
+}: {
+  children: ReactNode;
+  wide?: boolean;
+  /** Tràn khổ màn hình chiếu — dùng cho màn hình điều khiển Ai là triệu phú. */
+  full?: boolean;
+}) {
   return (
     <>
       <Backdrop />
       <main
-        className={`mx-auto flex min-h-dvh flex-col gap-6 px-5 py-7 sm:py-10 ${wide ? 'max-w-3xl' : 'max-w-xl'}`}
+        className={`mx-auto flex min-h-dvh flex-col gap-6 px-5 py-7 sm:py-10 ${full ? 'max-w-[110rem]' : wide ? 'max-w-3xl' : 'max-w-xl'}`}
       >
         {children}
       </main>

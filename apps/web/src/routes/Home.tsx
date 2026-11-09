@@ -15,7 +15,8 @@ import { api, ApiError, type OpenRounds } from '../lib/api';
 import { saveSession } from '../lib/session';
 import { buildSignupUrl } from '../lib/signup';
 import { GAME_THEME } from '../lib/game-theme';
-import { DEFAULT_MAX_PLAYERS, DURATION_MS, GAME_KINDS, GAME_LABEL, type GameKind } from '../lib/types';
+import { DEFAULT_MAX_PLAYERS, GAME_KINDS, GAME_LABEL, type GameKind } from '../lib/types';
+import { durationLabel } from '../lib/format';
 import { Shell } from '../components/Shell';
 import { ClubLinks } from '../components/ClubLinks';
 import { DscLogo } from '../components/Logo';
@@ -98,6 +99,8 @@ export function Home() {
   const [activeGame, setActiveGame] = useState<GameKind | null | undefined>(undefined);
   /** Sức chứa mỗi trò, do BTC đặt trong .env — `null` = chưa nạp xong. */
   const [maxPlayers, setMaxPlayers] = useState<Record<GameKind, number> | null>(null);
+  /** Số câu của bộ Ai là triệu phú — do BTC import nên không hard-code. */
+  const [quizCount, setQuizCount] = useState<number | undefined>(undefined);
   /** Link Form đăng ký CLB. Rỗng = BTC chưa cấu hình → không hiện nút. */
   const [signupForm, setSignupForm] = useState({ url: '', nameEntry: '' });
   const [error, setError] = useState('');
@@ -124,6 +127,7 @@ export function Home() {
         if (!alive) return;
         setActiveGame(cfg.activeGame);
         setMaxPlayers(cfg.maxPlayers);
+        setQuizCount(cfg.quizQuestionCount);
         setSignupForm({ url: cfg.signupFormUrl, nameEntry: cfg.signupNameEntry });
       } catch {
         /* mất mạng một nhịp thì giữ số cũ — không xoá đi làm màn hình nhảy */
@@ -244,7 +248,7 @@ export function Home() {
                 <p className="mt-1 flex items-center gap-3 text-xs text-muted">
                   <span className="flex items-center gap-1 tabular-nums">
                     <Clock aria-hidden="true" className="h-3.5 w-3.5 shrink-0" />
-                    {DURATION_MS[g] / 1000}s<span className="sr-only"> mỗi lượt</span>
+                    {durationLabel(g, quizCount)}<span className="sr-only"> mỗi lượt</span>
                   </span>
                   <span className="flex items-center gap-1 tabular-nums">
                     <Users aria-hidden="true" className="h-3.5 w-3.5 shrink-0" />

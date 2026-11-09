@@ -22,6 +22,8 @@ const PODIUM = [
  * ghi "chưa giải" cho tất cả mọi người.
  */
 function details(r: DashboardRow, game: GameKind): [string, string] {
+  // Ai là triệu phú: cả phòng đi cùng nhau từng câu nên không có "thời gian hoàn thành".
+  if (game === 'quiz') return [`${r.correct} đúng · ${r.wrong} sai`, ''];
   const what =
     game === 'draw'
       ? r.solved
@@ -102,7 +104,7 @@ export function RankTable({ rows, game }: { rows: DashboardRow[]; game: GameKind
                 <span className="min-w-0 flex-1">
                   <span className="block truncate font-semibold">{r.name}</span>
                   <span className="block text-xs text-muted">
-                    {what} · {time}
+                    {time ? `${what} · ${time}` : what}
                   </span>
                 </span>
                 <span className="shrink-0 text-right">

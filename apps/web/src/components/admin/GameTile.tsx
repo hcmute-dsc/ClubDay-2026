@@ -1,6 +1,7 @@
 import { Clock, Minus, Plus, Repeat, Users } from 'lucide-react';
 import { GAME_THEME } from '../../lib/game-theme';
-import { DURATION_MS, GAME_LABEL, MAX_PLAYERS_CAP, type GameKind } from '../../lib/types';
+import { GAME_LABEL, maxPlayersCap, type GameKind } from '../../lib/types';
+import { durationLabel } from '../../lib/format';
 
 export interface GameTileProps {
   game: GameKind;
@@ -8,6 +9,8 @@ export interface GameTileProps {
   active: boolean;
   /** Sức chứa hiện hành của trò này. */
   maxPlayers: number;
+  /** Số câu của bộ Ai là triệu phú đang dùng (chỉ dùng cho tile của trò đó). */
+  quizCount?: number | undefined;
   disabled: boolean;
   onCreate: () => void;
   onChangeMaxPlayers: (value: number) => void;
@@ -28,12 +31,13 @@ export function GameTile({
   game,
   active,
   maxPlayers,
+  quizCount,
   disabled,
   onCreate,
   onChangeMaxPlayers,
 }: GameTileProps) {
   const { icon: Icon, tile, chip, active: activeBlock } = GAME_THEME[game];
-  const seconds = DURATION_MS[game] / 1000;
+  const cap = maxPlayersCap(game);
 
   return (
     <div className={`card flex flex-col gap-4 p-5 ${active ? activeBlock : ''}`}>
@@ -58,7 +62,7 @@ export function GameTile({
       <div className="mt-auto flex flex-wrap items-center justify-between gap-3 border-t-2 border-line pt-4">
         <span className="flex items-center gap-1.5 font-display font-black tabular-nums">
           <Clock aria-hidden="true" className="h-4 w-4 shrink-0 text-muted" />
-          {seconds}s
+          {durationLabel(game, quizCount)}
           <span className="sr-only">mỗi lượt</span>
         </span>
 
@@ -78,7 +82,7 @@ export function GameTile({
           </span>
           <button
             onClick={() => onChangeMaxPlayers(maxPlayers + 1)}
-            disabled={disabled || maxPlayers >= MAX_PLAYERS_CAP}
+            disabled={disabled || maxPlayers >= cap}
             aria-label={`Tăng số người mỗi lượt ${GAME_LABEL[game]}`}
             className="btn btn-ghost btn-sm px-2"
           >

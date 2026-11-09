@@ -4,6 +4,7 @@ import { Lobby } from './routes/Lobby';
 import { Play } from './routes/Play';
 import { Dashboard } from './routes/Dashboard';
 import { Admin } from './routes/Admin';
+import { QuizHost } from './routes/QuizHost';
 
 /**
  * Router. File nền tảng — ĐÓNG BĂNG.
@@ -22,6 +23,8 @@ export function App() {
         <Route path="/play/:roundId" element={<Play />} />
         <Route path="/dashboard/:roundId" element={<Dashboard />} />
         <Route path="/admin" element={<Admin />} />
+        {/* Ai là triệu phú: màn hình điều khiển + máy chiếu của BTC */}
+        <Route path="/admin/quiz/:roundId" element={<QuizHost />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>
