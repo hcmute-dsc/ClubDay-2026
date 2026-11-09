@@ -1,6 +1,6 @@
 # ClubDay
 
-Web 4 trò chơi cho sự kiện CLB. Mỗi **lượt tối đa 5 người** (đổi được cho từng trò, xem `MAX_PLAYERS`), chơi xong hiện dashboard của đúng nhóm đó.
+Web 5 trò chơi cho sự kiện CLB. Bốn trò đầu chơi theo lượt ở booth: mỗi **lượt tối đa 5 người** (đổi được cho từng trò, xem `MAX_PLAYERS`), chơi xong hiện dashboard của đúng nhóm đó. Trò thứ năm, **Ai là triệu phú**, là trò cho cả khán phòng (tới 50 người) — xem mục riêng bên dưới.
 
 | Game | Thời lượng | Cách chơi |
 |---|---|---|
@@ -8,7 +8,74 @@ Web 4 trò chơi cho sự kiện CLB. Mỗi **lượt tối đa 5 người** (đ
 | **Vẽ hình nhanh** | 15 giây | Vẽ theo từ khoá rồi **bấm NỘP BÀI** để AI chấm — hết giờ thì tự nộp |
 | **Nhớ nhanh** | 60 giây | Nhìn chuỗi ô nháy sáng rồi lặp lại. **Điểm = cấp cao nhất vượt được** |
 | **Ô khác màu** | 45 giây | Tìm ô lệch màu trong lưới. Mỗi cấp lưới dày thêm và màu sát nhau hơn. **Điểm = cấp cao nhất vượt được** |
+| **Ai là triệu phú** | 40 câu × 15 giây | Cả phòng cùng xem một câu trên máy chiếu, chọn A/B/C/D trên điện thoại. **Chọn càng nhanh điểm càng cao** (600–1000/câu), có 2 quyền trợ giúp: 50:50 và x2 |
 
+---
+
+## Ai là triệu phú
+
+Khác bốn trò kia: **cả phòng đi cùng nhau từng câu**, và BTC là người dẫn nhịp.
+
+**Luồng vận hành**
+
+1. Ở `/admin` bấm **Tạo lượt** của *Ai là triệu phú* → tự chuyển sang **màn hình điều khiển** `/admin/quiz/<mã>` (cũng là màn hình đem chiếu). Nó hiện mã QR để cả hội trường quét, sức chứa mặc định **50 người**.
+2. Người chơi quét QR, nhập tên, chờ ở phòng chờ.
+3. BTC bấm **Bắt đầu**. Mỗi câu có **15 giây**; trên máy chiếu hiện câu hỏi, bốn đáp án, đồng hồ lớn, số người đã chọn và **bảng xếp hạng trực tiếp** (top 10).
+4. Hết giờ — hoặc cả phòng đã chọn xong, hoặc BTC bấm **Công bố đáp án** — đáp án đúng, số người chọn từng ô và một câu giải thích được hiện ra, điểm được cộng.
+5. BTC bấm **Câu tiếp theo** (hoặc **Phím cách**; một nút duy nhất đổi nghĩa theo pha). Sau câu 40 lượt kết thúc và ra bảng xếp hạng chung cuộc.
+
+**Chấm điểm** — mỗi câu đúng được `600 + 400 × (thời gian còn lại / 15s)`: chọn ngay giây đầu được **1000**, chọn giây cuối vẫn được **600**; sai hoặc bỏ trống **0**. Điểm giảm dần liên tục theo thời gian đã dùng, và điện thoại hiện luôn "chốt ngay bây giờ: +N điểm" để người chơi thấy thời gian là tiền. Chọn là **chốt**, không đổi được. Công thức nằm ở `quizPoints` trong `@clubday/contract`, dùng chung cho server chấm và client hiển thị.
+
+**2 quyền trợ giúp** — mỗi người **mỗi quyền một lần** trong cả lượt, phải dùng *trước* khi chốt đáp án:
+
+| Quyền | Tác dụng | Dùng được khi |
+|---|---|---|
+| **50:50** | Loại 2 đáp án sai | Mọi câu |
+| **Nhân đôi (x2)** | Câu này đúng thì điểm ×2 (sai thì mất quyền, không được lại) | Chỉ từ câu **mức Vừa trở lên** (câu 11–40). Ở câu dễ nút bị khoá, ghi rõ lý do, và bấm nhầm cũng **không bị trừ quyền** |
+
+Luật "x2 từ mức Vừa" nằm ở `QUIZ_DOUBLE_MIN_LEVEL` trong `@clubday/contract` — server từ chối (`LIFELINE_LOCKED`) và client khoá nút theo cùng một hằng số. Muốn x2 mở sớm hơn hay muộn hơn thì đổi số đó (1 = mọi câu, 3 = chỉ câu khó).
+
+**Bảng xếp hạng có hoạt ảnh** — khi công bố đáp án, các hàng **trượt mượt** sang thứ hạng mới, hàng vừa vượt lên **nháy viền xanh**, người mới lọt top **trượt vào**, và điểm **đếm dần** lên số mới. Trên điện thoại bảng bắt đầu từ thứ hạng cũ rồi mới chuyển, để thấy rõ ai vừa lên ai vừa xuống. Người bật "giảm chuyển động" trong hệ điều hành sẽ không thấy hoạt ảnh nào.
+
+**Câu hỏi — import từ file JSON.** Mặc định là bộ 40 câu có sẵn (`apps/server/src/services/quiz-bank.ts`: công nghệ, lập trình, chuyện vui; xếp dễ → vừa → khó theo 10/15/15). BTC thay bằng đề của mình ngay ở `/admin`, mục **Câu hỏi Ai là triệu phú**:
+
+1. Bấm **File mẫu** để tải `cau-hoi-mau.json`, sửa lại.
+2. Bấm **Import file JSON**, chọn file. File sai thì báo **mọi lỗi theo số câu** ("Câu 7: có 3 đáp án, cần đúng 4") và **không đổi gì**; file đúng thì báo đã nạp bao nhiêu câu và có cảnh báo gì (ví dụ không có câu mức Vừa nên x2 không dùng được).
+3. Bấm **Xem … câu hỏi** để soát lại nội dung kèm đáp án đúng.
+
+```json
+{
+  "questions": [
+    {
+      "text": "Thủ đô của Việt Nam là gì?",
+      "options": ["Hà Nội", "Huế", "Đà Nẵng", "Cần Thơ"],
+      "answer": "A",
+      "level": 1,
+      "category": "fun",
+      "explain": "Hà Nội là thủ đô từ năm 1010."
+    }
+  ]
+}
+```
+
+| Trường | | Ý nghĩa |
+|---|---|---|
+| `text` | bắt buộc | Câu hỏi (≤ 300 ký tự) |
+| `options` | bắt buộc | **Đúng 4** đáp án, không trùng nhau (≤ 120 ký tự mỗi cái) |
+| `answer` | bắt buộc | Đáp án đúng: chữ **"A"–"D"** (hoặc số 0–3, 0 là A). Số dạng chuỗi như `"1"` bị từ chối vì dễ nhầm từ 0 hay từ 1 |
+| `level` | tuỳ chọn, mặc định 2 | `1`/`2`/`3` hoặc `"dễ"`/`"vừa"`/`"khó"`. **Quyết định x2 có dùng được ở câu đó không** (từ mức 2) |
+| `category` | tuỳ chọn | Nhãn hiện cạnh câu hỏi, ví dụ `"tech"`; bỏ trống thì không hiện nhãn |
+| `explain` | tuỳ chọn | Một câu giải thích hiện lúc công bố đáp án |
+
+Cũng nhận trực tiếp một mảng `[ {...}, {...} ]`. Tối đa **100 câu**. Thứ tự trong file là thứ tự khi chơi; số câu của lượt = số câu trong file. Vị trí A/B/C/D vẫn được **xáo mỗi lượt**, nên `answer` chỉ nói đáp án nào đúng chứ không cố định ô.
+
+- **Áp dụng cho lượt BẮT ĐẦU từ giờ**; lượt đang chơi đã chụp bộ đề của nó nên không bị đổi giữa chừng.
+- Bộ đã import được **lưu ra `data/quiz-questions.json`** (đổi bằng `QUIZ_BANK_FILE`) và nạp lại khi khởi động, nên restart server không mất đề; trên Docker nó nằm trong volume `data`. Nút **Dùng bộ có sẵn** quay về 40 câu gốc.
+- Đáp án **chỉ nằm ở server** và chỉ đến client sau khi BTC công bố. Route xem/import đều cần `x-admin-token`.
+
+**Chống gian lận** — điểm và thời gian do server đo (không tin giờ điện thoại); chọn trong <350ms sau khi câu hiện ra bị từ chối và đánh cờ; chỉ BTC (`x-admin-token`) mới công bố / sang câu được.
+
+**Sức chứa** — mặc định 50, tối đa 50, đặt bằng `MAX_PLAYERS_QUIZ`. Trò này **không** theo `MAX_PLAYERS` chung (đó là con số cho các trò ở booth).
 ---
 
 ## Giao diện
@@ -237,7 +304,7 @@ trong `styles.css`:
 
 Class dùng chung khai báo trong `@layer components` của `styles.css`: `.btn` (+ `btn-primary`,
 `btn-accent`, `btn-correct`, `btn-ghost`, `btn-sm`, `btn-lg`), `.card`, `.field`, `.stage-bg`.
-Mỗi game có màu nhận diện riêng (`math` cyan, `draw` hồng, `memory` lime, `spot` cam) — xem
+Mỗi game có màu nhận diện riêng (`math` cyan, `draw` hồng, `memory` lime, `spot` cam, `quiz` xanh tím) — xem
 `lib/game-theme.ts`.
 
 Một họ chữ duy nhất: **Be Vietnam Pro** 400→900 (tiêu đề dùng 800/900), **tự host** qua
@@ -528,7 +595,7 @@ Tắt server: `Ctrl+C` — server tự lưu snapshot trước khi thoát.
 | Bước | Ai | Làm gì |
 |---|---|---|
 | 1 | BTC | Mở `/admin`, dán `ADMIN_TOKEN` vào ô trên cùng (lưu vào máy, chỉ nhập một lần) |
-| 2 | BTC | Bấm **+ Lượt Tính nhanh** / **+ Lượt Vẽ hình** / **+ Lượt Nhớ nhanh** / **+ Lượt Ô khác màu** → trò đó thành **trò đang mở**, hiện mã 6 ký tự kèm **mã QR** để quét |
+| 2 | BTC | Bấm **Tạo lượt** ở trò muốn chơi (Tính nhanh / Vẽ hình / Nhớ nhanh / Ô khác màu / Ai là triệu phú) → trò đó thành **trò đang mở**, hiện mã 6 ký tự kèm **mã QR** để quét |
 | 3 | Người chơi | Quét QR (hoặc mở `http://<IP>:8787`) → nhập tên → vào phòng chờ của **trò BTC đang mở** |
 | 4 | | Tối đa **5 người**. Người thứ 6 bị chặn và báo "chờ lượt sau" |
 | 5 | BTC | Bấm **BẮT ĐẦU** ở `/admin` (màn hình phòng chờ KHÔNG có nút này) |

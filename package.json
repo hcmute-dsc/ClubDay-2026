@@ -2,7 +2,7 @@
   "name": "clubday",
   "version": "0.1.0",
   "private": true,
-  "description": "Web 4 trò chơi cho sự kiện CLB — Tính nhanh, Vẽ hình nhanh (nhận diện AI), Nhớ nhanh, Ô khác màu",
+  "description": "Web 5 trò chơi cho sự kiện CLB — Tính nhanh, Vẽ hình nhanh (nhận diện AI), Nhớ nhanh, Ô khác màu, Ai là triệu phú",
   "type": "module",
   "engines": {
     "node": ">=20.0.0"
