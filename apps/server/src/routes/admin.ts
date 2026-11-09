@@ -11,8 +11,9 @@ import {
 } from '../store/store.js';
 import { selectActiveGame, skipRound } from '../store/lobby.js';
 import { toRoundState } from '../store/state.js';
-import { GAME_KINDS, MAX_PLAYERS_CAP } from '../store/types.js';
+import { GAME_KINDS, maxPlayersCap } from '../store/types.js';
 import { requireAdmin } from './admin-guard.js';
+import { getQuizBankInfo } from '../services/quiz-bank-store.js';
 
 const CreateBody = z.object({ game: z.enum(GAME_KINDS) });
 /** `game: null` = tạm đóng, không ai vào lượt mới được. */
@@ -22,10 +23,13 @@ const ActiveGameBody = z.object({ game: z.enum(GAME_KINDS).nullable() });
  * Bắt gõ đúng một chuỗi để nó không thể xảy ra vì một cú bấm nhầm.
  */
 const ResetBody = z.object({ confirm: z.literal('XOA-HET') });
-const MaxPlayersBody = z.object({
-  game: z.enum(GAME_KINDS),
-  value: z.number().int().min(1).max(MAX_PLAYERS_CAP),
-});
+const MaxPlayersBody = z
+  .object({
+    game: z.enum(GAME_KINDS),
+    value: z.number().int().min(1),
+  })
+  // Trần mỗi trò một khác (Ai là triệu phú tới 50), nên chỉ kiểm được sau khi biết là trò nào.
+  .refine((b) => b.value <= maxPlayersCap(b.game));
 
 export async function adminRoutes(app: FastifyInstance): Promise<void> {
   app.addHook('preHandler', requireAdmin);
@@ -69,6 +73,7 @@ export async function adminRoutes(app: FastifyInstance): Promise<void> {
     /** Trò mở gần đây nhất — để /admin có nút "Mở lại" khi đang tạm đóng. */
     lastGame: getLastGame(),
     maxPlayers: getMaxPlayers(),
+    quizBank: getQuizBankInfo(),
     rounds: allRounds()
       .sort((a, b) => b.createdAt - a.createdAt)
       .slice(0, 30)

@@ -49,7 +49,9 @@ export function dashboard(round: Round): DashboardRow[] {
         score: p.score,
         correct: p.correct,
         wrong: p.wrong,
-        msToFinish: Number.isFinite(f) ? f - started : null,
+        // "Xong lúc nào" không có nghĩa với Ai là triệu phú: cả phòng đi cùng nhau
+        // từng câu, nên mốc đó chỉ là giờ của câu cuối chứ không phải tốc độ.
+        msToFinish: round.game !== 'quiz' && Number.isFinite(f) ? f - started : null,
         solved: p.draw.solved,
         flagged: p.flagged,
       };

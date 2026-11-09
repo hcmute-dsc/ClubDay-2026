@@ -154,6 +154,26 @@ describe('POST /api/admin/max-players', () => {
   });
 });
 
+describe('sức chứa Ai là triệu phú', () => {
+  const setMax = (game: string, value: number) =>
+    app!.inject({ method: 'POST', url: '/api/admin/max-players', headers: auth, payload: { game, value } });
+
+  it('nhận tới 50 người — trần riêng của trò này', async () => {
+    app = await bootApp();
+    expect((await setMax('quiz', 50)).statusCode).toBe(200);
+  });
+
+  it('51 người → 400', async () => {
+    app = await bootApp();
+    expect((await setMax('quiz', 51)).statusCode).toBe(400);
+  });
+
+  it('nhưng 50 người vẫn quá trần của các trò khác', async () => {
+    app = await bootApp();
+    expect((await setMax('math', 50)).statusCode).toBe(400);
+  });
+});
+
 describe('vào lượt và bắt đầu', () => {
   it('người chơi KHÔNG chọn được trò — server quyết theo trò đang mở', async () => {
     app = await bootApp();

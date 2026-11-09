@@ -42,6 +42,22 @@ export function registerEndHook(game: GameKind, fn: EndHook): void {
   endHooks.set(game, fn);
 }
 
+// ─────────────── hook mỗi nhịp đồng hồ ───────────────
+//
+// Dành cho game có MÁY TRẠNG THÁI chung của cả phòng (Ai là triệu phú): nó phải tự
+// chuyển pha khi hết giờ câu hỏi dù không ai gửi request nào. Bốn game kia chỉ
+// cần biết "hết giờ cả lượt chưa" nên không đăng ký hook này.
+//
+// Chạy ĐẦU `syncRoundStatus`, tức là cả ở đồng hồ nền lẫn sau mỗi thao tác của người
+// chơi — nên một đáp án đến đúng lúc cuối cùng cũng công bố được ngay, không phải
+// chờ nhịp quét kế tiếp.
+type TickHook = (round: Round, now: number) => void;
+const tickHooks = new Map<GameKind, TickHook>();
+
+export function registerTickHook(game: GameKind, fn: TickHook): void {
+  tickHooks.set(game, fn);
+}
+
 // ─────────────── join ───────────────
 
 export type JoinResult =
@@ -172,6 +188,8 @@ function allPlayersFinished(round: Round): boolean {
  */
 export function syncRoundStatus(round: Round, now = Date.now()): boolean {
   if (round.status !== 'playing') return false;
+
+  tickHooks.get(round.game)?.(round, now);
 
   const timeUp = round.endsAt !== null && now > round.endsAt;
   if (!timeUp && !allPlayersFinished(round)) return false;

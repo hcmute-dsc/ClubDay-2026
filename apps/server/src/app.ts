@@ -17,6 +17,7 @@ import { mathRoutes } from './routes/math.js'; // TRACK A
 import { drawRoutes } from './routes/draw.js'; // TRACK B
 import { memoryRoutes } from './routes/memory.js'; // TRACK C
 import { spotRoutes } from './routes/spot.js'; // TRACK D
+import { quizRoutes } from './routes/quiz.js'; // TRACK E
 import { configRoutes } from './routes/config.js';
 import { healthReport } from './lib/health.js';
 
@@ -50,6 +51,7 @@ export async function buildApp(opts: BuildOptions = {}): Promise<FastifyInstance
   await app.register(drawRoutes); // TRACK B — stub cho tới Wave 2
   await app.register(memoryRoutes); // TRACK C
   await app.register(spotRoutes); // TRACK D
+  await app.register(quizRoutes); // TRACK E
   await app.register(configRoutes);
 
   // Phục vụ luôn bản build của web → sự kiện chỉ cần 1 URL duy nhất.

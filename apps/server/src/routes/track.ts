@@ -32,6 +32,14 @@ const CODE_STATUS: Record<string, number> = {
   NO_TARGET: 500,
   // Nhớ nhanh + Ô khác màu
   BAD_LEVEL: 400,
+  // Ai là triệu phú
+  BAD_CHOICE: 400,
+  HIDDEN_OPTION: 400,
+  QUESTION_CLOSED: 409,
+  ALREADY_ANSWERED: 409,
+  LIFELINE_USED: 409,
+  LIFELINE_LOCKED: 409,
+  WRONG_PHASE: 409,
 };
 
 /** HTTP status cho một mã lỗi nghiệp vụ. Mã lạ → 400 (lỗi phía client). */

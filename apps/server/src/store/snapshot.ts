@@ -7,7 +7,7 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname } from 'node:path';
 import { MAX_PLAYERS, type Player, type Round } from './types.js';
-import { allRounds, restoreRound } from './store.js';
+import { allRounds, emptyQuizPlayer, emptyQuizRound, restoreRound } from './store.js';
 
 interface SerializedRound extends Omit<Round, 'players'> {
   players: Player[];
@@ -41,6 +41,7 @@ function restorePlayer(raw: Player): Player {
     },
     memory: raw.memory ?? { level: 1, levelSentAt: 0, lastReplayAt: 0 },
     spot: raw.spot ?? { level: 1, lastPickAt: 0 },
+    quiz: raw.quiz ?? emptyQuizPlayer(),
   };
 }
 
@@ -72,6 +73,7 @@ export function loadSnapshot(file: string, now = Date.now()): number {
         math: r.math ?? { questions: null },
         draw: r.draw ?? { target: null },
         memory: r.memory ?? { sequence: null },
+        quiz: r.quiz ?? emptyQuizRound(),
         status: 'done',
         endsAt: r.endsAt ?? now,
         live: false,

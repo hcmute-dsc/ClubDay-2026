@@ -4,11 +4,20 @@
  * Cố ý KHÔNG dùng SQLite/ORM: mỗi lượt chỉ 5 người, xem kết quả rồi thôi,
  * không cần truy vấn lịch sử. Xem plan v2 mục 0 để biết lý do.
  */
-import type { GameKind, Player, Round } from './types.js';
+import type { GameKind, Player, QuizPlayerState, QuizRoundState, Round } from './types.js';
 import { MAX_PLAYERS_BY_GAME } from '../config.js';
 import { newPlayerId, newRoundId } from '../lib/id.js';
 
 const rounds = new Map<string, Round>();
+
+/** Trạng thái Ai là triệu phú lúc chưa bắt đầu. Dùng chung với snapshot khi khôi phục. */
+export function emptyQuizRound(): QuizRoundState {
+  return { questions: null, index: 0, phase: 'question', startedAt: 0, endsAt: 0, distribution: [] };
+}
+
+export function emptyQuizPlayer(): QuizPlayerState {
+  return { answer: null, answeredAt: null, streak: 0, lastDelta: 0, used: {}, hints: {} };
+}
 
 /**
  * GAME ĐANG MỞ — mỗi thời điểm chỉ MỘT loại game được chơi.
@@ -121,6 +130,7 @@ export function createRound(game: GameKind, now = Date.now()): Round {
     math: { questions: null },
     draw: { target: null },
     memory: { sequence: null },
+    quiz: emptyQuizRound(),
     version: 0,
     live: true,
   };
@@ -187,6 +197,7 @@ export function addPlayer(round: Round, name: string, now = Date.now()): Player 
     },
     memory: { level: 1, levelSentAt: 0, lastReplayAt: 0 },
     spot: { level: 1, lastPickAt: 0 },
+    quiz: emptyQuizPlayer(),
   };
   round.players.set(player.id, player);
   playerIndex.set(player.id, round.id);
