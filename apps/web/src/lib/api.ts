@@ -25,6 +25,8 @@ export interface ClientConfig {
   maxPlayers: Record<GameKind, number>;
   /** Số câu của bộ Ai là triệu phú đang dùng. Server cũ chưa gửi → `undefined`, và màn hình không hiện số câu. */
   quizQuestionCount?: number;
+  /** Số người mỗi đội của Ai là triệu phú. Server cũ chưa gửi → `undefined`. */
+  quizTeamSize?: number;
 }
 
 /** Một câu trong bộ đang dùng — CÓ đáp án, nên chỉ lấy được bằng mã quản trị. */
@@ -104,6 +106,8 @@ export const api = {
       lastGame: GameKind;
       maxPlayers: Record<GameKind, number>;
       quizBank: QuizBankInfo;
+      /** Số người mỗi đội của Ai là triệu phú. Server cũ chưa gửi → `undefined`. */
+      quizTeamSize?: number;
       rounds: RoundSummary[];
     }>('/api/admin/rounds', token),
 
@@ -113,6 +117,10 @@ export const api = {
       '/api/admin/max-players',
       json({ game, value }, token),
     ),
+
+  /** BTC: đổi số người mỗi đội của Ai là triệu phú. Áp cho lượt bắt đầu từ đây về sau. */
+  setQuizTeamSize: (value: number, token: string) =>
+    request<{ quizTeamSize: number }>('/api/admin/quiz/team-size', json({ value }, token)),
 
   /** BTC: chọn trò được chơi lúc này (`null` = tạm đóng). */
   setActiveGame: (game: GameKind | null, token: string) =>

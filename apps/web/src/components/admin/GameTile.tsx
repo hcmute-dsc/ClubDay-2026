@@ -1,6 +1,12 @@
-import { Clock, Minus, Plus, Repeat, Users } from 'lucide-react';
+import { Clock, Minus, Plus, Repeat, Users, UsersRound } from 'lucide-react';
 import { GAME_THEME } from '../../lib/game-theme';
-import { GAME_LABEL, maxPlayersCap, type GameKind } from '../../lib/types';
+import {
+  GAME_LABEL,
+  QUIZ_TEAM_SIZE_MAX,
+  QUIZ_TEAM_SIZE_MIN,
+  maxPlayersCap,
+  type GameKind,
+} from '../../lib/types';
 import { durationLabel } from '../../lib/format';
 
 export interface GameTileProps {
@@ -11,6 +17,9 @@ export interface GameTileProps {
   maxPlayers: number;
   /** Số câu của bộ Ai là triệu phú đang dùng (chỉ dùng cho tile của trò đó). */
   quizCount?: number | undefined;
+  /** Số người mỗi đội của Ai là triệu phú. Chỉ tile của trò đó dùng; không truyền = không vẽ bộ chỉnh. */
+  teamSize?: number | undefined;
+  onChangeTeamSize?: ((value: number) => void) | undefined;
   disabled: boolean;
   onCreate: () => void;
   onChangeMaxPlayers: (value: number) => void;
@@ -32,6 +41,8 @@ export function GameTile({
   active,
   maxPlayers,
   quizCount,
+  teamSize,
+  onChangeTeamSize,
   disabled,
   onCreate,
   onChangeMaxPlayers,
@@ -90,6 +101,38 @@ export function GameTile({
           </button>
         </span>
       </div>
+
+      {/* Ai là triệu phú: số người mỗi đội — BTC đặt, server chia ngẫu nhiên khi bắt đầu. */}
+      {game === 'quiz' && teamSize !== undefined && onChangeTeamSize && (
+        <div className="flex flex-wrap items-center justify-between gap-3 border-t-2 border-line pt-4">
+          <span className="flex items-center gap-1.5 text-sm font-bold">
+            <UsersRound aria-hidden="true" className="h-4 w-4 shrink-0 text-muted" />
+            Mỗi đội
+          </span>
+          <span className="flex shrink-0 items-center gap-1">
+            <button
+              onClick={() => onChangeTeamSize(teamSize - 1)}
+              disabled={disabled || teamSize <= QUIZ_TEAM_SIZE_MIN}
+              aria-label="Giảm số người mỗi đội"
+              className="btn btn-ghost btn-sm px-2"
+            >
+              <Minus aria-hidden="true" className="h-4 w-4" />
+            </button>
+            <span role="status" className="w-8 text-center font-display text-xl font-black tabular-nums">
+              {teamSize}
+              <span className="sr-only"> người mỗi đội</span>
+            </span>
+            <button
+              onClick={() => onChangeTeamSize(teamSize + 1)}
+              disabled={disabled || teamSize >= QUIZ_TEAM_SIZE_MAX}
+              aria-label="Tăng số người mỗi đội"
+              className="btn btn-ghost btn-sm px-2"
+            >
+              <Plus aria-hidden="true" className="h-4 w-4" />
+            </button>
+          </span>
+        </div>
+      )}
 
       {/*
         NHÃN NÓI ĐÚNG VIỆC NÚT LÀM.

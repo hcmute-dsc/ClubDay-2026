@@ -47,7 +47,7 @@ export const SCORE_LABEL: Record<GameKind, string> = {
   draw: 'Điểm',
   memory: 'Cấp cao nhất',
   spot: 'Cấp cao nhất',
-  quiz: 'Điểm',
+  quiz: 'Điểm đội',
 };
 
 /**

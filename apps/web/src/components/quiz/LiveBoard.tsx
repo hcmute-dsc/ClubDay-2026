@@ -1,7 +1,6 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Check, Crown } from 'lucide-react';
-import type { RoundStatePlayer } from '../../lib/types';
-import { Avatar } from '../Avatar';
+import type { QuizTeamPublic } from '../../lib/types';
 
 /** Thời gian một hàng trượt sang chỗ mới. */
 const MOVE_MS = 750;
@@ -69,18 +68,20 @@ function AnimatedNumber({ value, motion }: { value: number; motion: BoardMotion 
 }
 
 export interface LiveBoardProps {
-  /** Đã xếp hạng sẵn bởi server (`rank`) — KHÔNG tự sắp lại ở đây. */
-  players: RoundStatePlayer[];
+  /** Các ĐỘI, đã xếp hạng sẵn bởi server (`rank`) — KHÔNG tự sắp lại ở đây. */
+  teams: QuizTeamPublic[];
   /**
    * Ảnh chụp bảng TRƯỚC khi điểm đổi. Truyền vào thì bảng dựng lên với thứ hạng và
    * điểm cũ, rồi tự chuyển sang mới — để người xem THẤY được sự thay đổi ngay cả khi
    * bảng chỉ mới xuất hiện (điện thoại chỉ dựng bảng lúc công bố).
    */
-  before?: RoundStatePlayer[];
-  /** Người đang xem (điện thoại). Nếu rớt ngoài top, dòng của họ vẫn được ghim ở cuối. */
-  meId?: string;
+  before?: QuizTeamPublic[];
+  /** Đội của người đang xem (điện thoại). Nếu rớt ngoài top, dòng của đội vẫn được ghim ở cuối. */
+  meTeamId?: string;
+  /** Hiện tên đội trưởng của câu đang mở dưới tên đội (màn hình chiếu). */
+  showCaptain?: boolean;
   limit?: number;
-  /** Đang công bố thì hiện điểm vừa nhận; đang chọn thì hiện ai đã chốt rồi. */
+  /** Đang công bố thì hiện điểm vừa nhận; đang chọn thì hiện đội nào đã chốt rồi. */
   phase: 'question' | 'reveal' | 'final';
   /** Cỡ chữ cho màn hình chiếu. */
   large?: boolean;
@@ -89,18 +90,18 @@ export interface LiveBoardProps {
 }
 
 /** Bảng ở trạng thái "trước": thứ hạng + điểm cũ, nhưng tên/điểm vừa nhận lấy từ bản mới. */
-function asBefore(players: RoundStatePlayer[], before: RoundStatePlayer[]): RoundStatePlayer[] {
-  const old = new Map(before.map((p) => [p.id, p]));
-  return players
-    .map((p) => {
-      const o = old.get(p.id);
-      return o ? { ...p, score: o.score, rank: o.rank ?? p.rank } : p;
+function asBefore(teams: QuizTeamPublic[], before: QuizTeamPublic[]): QuizTeamPublic[] {
+  const old = new Map(before.map((t) => [t.id, t]));
+  return teams
+    .map((t) => {
+      const o = old.get(t.id);
+      return o ? { ...t, score: o.score, rank: o.rank } : t;
     })
-    .sort((a, b) => (old.get(a.id)?.rank ?? 1e9) - (old.get(b.id)?.rank ?? 1e9) || (a.rank ?? 0) - (b.rank ?? 0));
+    .sort((a, b) => (old.get(a.id)?.rank ?? 1e9) - (old.get(b.id)?.rank ?? 1e9) || a.rank - b.rank);
 }
 
 /**
- * Bảng xếp hạng TRỰC TIẾP. Đi theo luồng SSE nên điểm đổi là bảng đổi, không poll.
+ * Bảng xếp hạng ĐỘI TRỰC TIẾP. Đi theo luồng SSE nên điểm đổi là bảng đổi, không poll.
  *
  * Chỉ hiện top `limit`: 50 dòng không vừa một màn hình chiếu, và dòng 30 cũng chẳng
  * ai đọc. Người xem vẫn thấy hạng của chính mình qua dòng ghim ở cuối.
@@ -113,9 +114,10 @@ function asBefore(players: RoundStatePlayer[], before: RoundStatePlayer[]): Roun
  *   - điểm đếm dần lên số mới.
  */
 export function LiveBoard({
-  players,
+  teams,
   before,
-  meId,
+  meTeamId,
+  showCaptain = false,
   limit = 10,
   phase,
   large = false,
@@ -129,13 +131,13 @@ export function LiveBoard({
   }, [settled]);
 
   const rows = useMemo(
-    () => (settled || !before ? players : asBefore(players, before)),
-    [settled, before, players],
+    () => (settled || !before ? teams : asBefore(teams, before)),
+    [settled, before, teams],
   );
 
   const top = rows.slice(0, limit);
-  const me = meId ? rows.find((p) => p.id === meId) : undefined;
-  const pinMe = me && !top.some((p) => p.id === me.id);
+  const me = meTeamId ? rows.find((t) => t.id === meTeamId) : undefined;
+  const pinMe = me && !top.some((t) => t.id === me.id);
 
   // ── FLIP: nhớ vị trí từng hàng ở lần dựng trước, so với lần này ──
   const listRef = useRef<HTMLOListElement>(null);
@@ -192,18 +194,21 @@ export function LiveBoard({
     tops.current = next;
   });
 
-  if (players.length === 0) {
-    return <p className="card p-6 text-center text-muted">Chưa có ai trên bảng.</p>;
+  if (teams.length === 0) {
+    return <p className="card p-6 text-center text-muted">Chưa có đội nào trên bảng.</p>;
   }
 
-  const row = (p: RoundStatePlayer, pinned = false) => {
-    const rank = p.rank ?? 0;
-    const isMe = p.id === meId;
+  const row = (t: QuizTeamPublic, pinned = false) => {
+    const rank = t.rank;
+    const isMe = t.id === meTeamId;
+    const captain = showCaptain ? t.members.find((m) => m.id === t.captainId) : undefined;
     return (
       <li
-        key={p.id}
-        data-row={p.id}
-        className={`relative flex items-center gap-3 border-2 border-line ${large ? 'p-3' : 'p-2'} ${
+        key={t.id}
+        data-row={t.id}
+        // Viền trái tô màu đội: nhìn lên bảng là nhận ra đội mình, không cần đọc tên.
+        style={{ borderLeftColor: t.color }}
+        className={`relative flex items-center gap-3 border-2 border-l-[10px] border-line ${large ? 'p-3' : 'p-2'} ${
           isMe ? 'bg-accent text-ink' : rank === 1 ? 'bg-surface-2' : 'bg-surface'
         } ${pinned ? 'mt-3' : ''}`}
       >
@@ -222,22 +227,29 @@ export function LiveBoard({
             rank
           )}
         </span>
-        <Avatar name={p.name} seed={p.id} />
-        <span className={`min-w-0 flex-1 truncate font-bold ${large ? 'text-xl' : 'text-sm'}`}>
-          {p.name}
-          {isMe && <span className="ml-2 text-xs font-black uppercase">(bạn)</span>}
+        <span className="min-w-0 flex-1">
+          <span className={`block truncate font-bold ${large ? 'text-xl' : 'text-sm'}`}>
+            {t.name}
+            {isMe && <span className="ml-2 text-xs font-black uppercase">(đội bạn)</span>}
+          </span>
+          <span className={`block truncate ${large ? 'text-base' : 'text-xs'} ${isMe ? '' : 'text-muted'}`}>
+            {captain ? `Đội trưởng: ${captain.name}` : t.members.map((m) => m.name).join(', ')}
+          </span>
         </span>
 
-        {phase === 'question' && p.answered && (
-          <Check aria-label="Đã chọn" className="h-5 w-5 shrink-0 text-correct" strokeWidth={4} />
-        )}
+        {phase === 'question' &&
+          (t.answered ? (
+            <Check aria-label="Đã chốt" className="h-5 w-5 shrink-0 text-correct" strokeWidth={4} />
+          ) : (
+            <span className={`shrink-0 text-xs font-bold ${isMe ? '' : 'text-muted'}`}>Đang bàn…</span>
+          ))}
         {phase === 'reveal' && (
           <span
             className={`shrink-0 font-display font-black tabular-nums ${large ? 'text-xl' : 'text-sm'} ${
-              (p.delta ?? 0) > 0 ? (isMe ? 'text-ink' : 'text-correct') : 'text-muted'
+              t.delta > 0 ? (isMe ? 'text-ink' : 'text-correct') : 'text-muted'
             }`}
           >
-            {(p.delta ?? 0) > 0 ? `+${p.delta}` : '0'}
+            {t.delta > 0 ? `+${t.delta}` : '0'}
           </span>
         )}
         <span
@@ -245,7 +257,7 @@ export function LiveBoard({
             large ? 'w-24 text-3xl' : 'w-16 text-xl'
           }`}
         >
-          <AnimatedNumber value={p.score} motion={motion} />
+          <AnimatedNumber value={t.score} motion={motion} />
         </span>
       </li>
     );
@@ -253,7 +265,7 @@ export function LiveBoard({
 
   return (
     <ol ref={listRef} className="relative space-y-2" aria-label="Bảng xếp hạng trực tiếp">
-      {top.map((p) => row(p))}
+      {top.map((t) => row(t))}
       {pinMe && me && row(me, true)}
     </ol>
   );

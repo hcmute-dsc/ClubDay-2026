@@ -14,6 +14,8 @@ import { RoundRow } from '../components/admin/RoundRow';
 import {
   GAME_KINDS,
   DEFAULT_MAX_PLAYERS,
+  QUIZ_TEAM_SIZE_MAX,
+  QUIZ_TEAM_SIZE_MIN,
   maxPlayersCap,
   type GameKind,
   type RoundSummary,
@@ -51,6 +53,8 @@ export function Admin() {
   const [maxPlayers, setMaxPlayers] = useState<Record<GameKind, number> | null>(null);
   /** Số câu của bộ Ai là triệu phú đang dùng — đổi khi BTC import file. */
   const [quizCount, setQuizCount] = useState<number | undefined>(undefined);
+  /** Số người mỗi đội của Ai là triệu phú. `undefined` = server chưa báo (bản cũ) → không vẽ bộ chỉnh. */
+  const [quizTeamSize, setQuizTeamSize] = useState<number | undefined>(undefined);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const [page, setPage] = useState(0);
@@ -70,6 +74,7 @@ export function Admin() {
       setLastGame(res.lastGame);
       setMaxPlayers(res.maxPlayers);
       setQuizCount(res.quizBank.count);
+      setQuizTeamSize(res.quizTeamSize);
       setError('');
     } catch (err) {
       setError(
@@ -102,6 +107,19 @@ export function Admin() {
     } catch {
       setError('Không đổi được số người.');
       void refresh(); // lấy lại con số thật của server
+    }
+  }
+
+  /** Đổi số người mỗi đội. Vẽ số mới ngay, như `changeMaxPlayers`. */
+  async function changeQuizTeamSize(value: number) {
+    if (value < QUIZ_TEAM_SIZE_MIN || value > QUIZ_TEAM_SIZE_MAX) return;
+    setQuizTeamSize(value);
+    try {
+      const res = await api.setQuizTeamSize(value, token);
+      setQuizTeamSize(res.quizTeamSize);
+    } catch {
+      setError('Không đổi được số người mỗi đội.');
+      void refresh();
     }
   }
 
@@ -193,6 +211,8 @@ export function Admin() {
             active={g === activeGame}
             maxPlayers={maxPlayers?.[g] ?? DEFAULT_MAX_PLAYERS}
             quizCount={quizCount}
+            teamSize={quizTeamSize}
+            onChangeTeamSize={(value) => void changeQuizTeamSize(value)}
             disabled={busy || !token}
             onCreate={() =>
               void act(async () => {

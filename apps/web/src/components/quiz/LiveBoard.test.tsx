@@ -2,7 +2,7 @@
 import { act, cleanup, render, screen, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { LiveBoard } from './LiveBoard';
-import type { RoundStatePlayer } from '../../lib/types';
+import type { QuizTeamPublic } from '../../lib/types';
 
 /**
  * Hoạt ảnh bảng xếp hạng. jsdom không có layout thật (`offsetTop` luôn 0) và không có
@@ -30,13 +30,22 @@ afterEach(() => {
   vi.useRealTimers();
 });
 
-const p = (id: string, rank: number, score: number, extra: Partial<RoundStatePlayer> = {}): RoundStatePlayer => ({
+/** Một đội gồm hai người, đội trưởng là người đầu tiên. */
+const p = (id: string, rank: number, score: number, extra: Partial<QuizTeamPublic> = {}): QuizTeamPublic => ({
   id,
   name: id.toUpperCase(),
+  color: '#2f80ff',
+  members: [
+    { id: `${id}-1`, name: `${id}1` },
+    { id: `${id}-2`, name: `${id}2` },
+  ],
+  captainId: `${id}-1`,
   score,
-  finished: false,
   rank,
+  answered: false,
   delta: 0,
+  correct: 0,
+  wrong: 0,
   ...extra,
 });
 
@@ -46,7 +55,7 @@ const order = (): string[] =>
     .getAllByRole('listitem')
     .map((li) => li.getAttribute('data-row') ?? '');
 
-const board = (players: RoundStatePlayer[]) => <LiveBoard players={players} phase="reveal" limit={10} />;
+const board = (teams: QuizTeamPublic[]) => <LiveBoard teams={teams} phase="reveal" limit={10} />;
 
 describe('LiveBoard — hoạt ảnh khi bảng đổi', () => {
   it('lần dựng đầu KHÔNG animate gì (bảng vừa mở, chưa có gì "thay đổi")', () => {
@@ -102,7 +111,7 @@ describe('LiveBoard — dựng từ bảng cũ (điện thoại lúc công bố)
 
   it('hiện thứ hạng + điểm CŨ trước, rồi mới chuyển sang mới', () => {
     vi.useFakeTimers();
-    render(<LiveBoard players={after} before={before} phase="reveal" />);
+    render(<LiveBoard teams={after} before={before} phase="reveal" />);
 
     expect(order()).toEqual(['a', 'b', 'c']); // cũ
     expect(screen.getByText('900')).toBeTruthy();
@@ -115,12 +124,12 @@ describe('LiveBoard — dựng từ bảng cũ (điện thoại lúc công bố)
 
   it('điểm vừa nhận (+1000) hiện ngay từ đầu, không đợi chuyển', () => {
     vi.useFakeTimers();
-    render(<LiveBoard players={after} before={before} phase="reveal" />);
+    render(<LiveBoard teams={after} before={before} phase="reveal" />);
     expect(screen.getByText('+1000')).toBeTruthy();
   });
 
   it('không có bảng cũ → hiện thẳng bảng mới, không chờ', () => {
-    render(<LiveBoard players={after} phase="reveal" />);
+    render(<LiveBoard teams={after} phase="reveal" />);
     expect(order()).toEqual(['c', 'a', 'b']);
   });
 });
@@ -128,21 +137,35 @@ describe('LiveBoard — dựng từ bảng cũ (điện thoại lúc công bố)
 describe('LiveBoard — nội dung', () => {
   it('rớt ngoài top vẫn ghim dòng của mình ở cuối', () => {
     const many = Array.from({ length: 8 }, (_, i) => p(`p${i}`, i + 1, 1000 - i * 10));
-    render(<LiveBoard players={many} meId="p7" limit={3} phase="question" />);
+    render(<LiveBoard teams={many} meTeamId="p7" limit={3} phase="question" />);
     expect(order()).toEqual(['p0', 'p1', 'p2', 'p7']);
   });
 
-  it('pha question hiện dấu tick cho người đã chọn, không hiện điểm vừa nhận', () => {
-    render(<LiveBoard players={[p('a', 1, 0, { answered: true }), p('b', 2, 0)]} phase="question" />);
-    expect(screen.getAllByLabelText('Đã chọn')).toHaveLength(1);
+  it('pha question hiện dấu tick cho đội đã chốt, đội chưa chốt ghi "Đang bàn…", không hiện điểm vừa nhận', () => {
+    render(<LiveBoard teams={[p('a', 1, 0, { answered: true }), p('b', 2, 0)]} phase="question" />);
+    expect(screen.getAllByLabelText('Đã chốt')).toHaveLength(1);
+    expect(screen.getAllByText('Đang bàn…')).toHaveLength(1);
     expect(screen.queryByText(/^\+/)).toBeNull();
+  });
+
+  it('showCaptain hiện đúng đội trưởng của câu, không thì hiện danh sách thành viên', () => {
+    const t = p('a', 1, 0, { captainId: 'a-2' });
+    const { rerender } = render(<LiveBoard teams={[t]} phase="question" showCaptain />);
+    expect(screen.getByText('Đội trưởng: a2')).toBeTruthy();
+    rerender(<LiveBoard teams={[t]} phase="question" />);
+    expect(screen.getByText('a1, a2')).toBeTruthy();
+  });
+
+  it('đánh dấu đội của mình', () => {
+    render(<LiveBoard teams={[p('a', 1, 0), p('b', 2, 0)]} meTeamId="b" phase="reveal" />);
+    expect(screen.getAllByText('(đội bạn)')).toHaveLength(1);
   });
 });
 
 describe('LiveBoard — chế độ chuyển động', () => {
   const swap = (props: { motion?: 'respect' | 'always' }) => {
-    const view = render(<LiveBoard players={[p('a', 1, 900), p('b', 2, 800)]} phase="reveal" {...props} />);
-    view.rerender(<LiveBoard players={[p('b', 1, 1700), p('a', 2, 900)]} phase="reveal" {...props} />);
+    const view = render(<LiveBoard teams={[p('a', 1, 900), p('b', 2, 800)]} phase="reveal" {...props} />);
+    view.rerender(<LiveBoard teams={[p('b', 1, 1700), p('a', 2, 900)]} phase="reveal" {...props} />);
   };
 
   it('máy bật "giảm chuyển động": điện thoại (respect) KHÔNG animate', () => {

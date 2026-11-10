@@ -7,6 +7,7 @@ import {
   House,
   KeyRound,
   Lightbulb,
+  MessageCircle,
   Play,
   TriangleAlert,
   Trophy,
@@ -25,7 +26,7 @@ import { QrCode } from '../components/QrCode';
 import { RankTable } from '../components/RankTable';
 import { LiveBoard } from '../components/quiz/LiveBoard';
 import { QuizOptions } from '../components/quiz/QuizOptions';
-import { QUIZ_QUESTION_MS, type DashboardRow, type RoundState } from '../lib/types';
+import { QUIZ_QUESTION_MS, quizTeamCount, type DashboardRow, type RoundState } from '../lib/types';
 
 const LEVEL_LABEL = { 1: 'Dễ', 2: 'Vừa', 3: 'Khó' } as const;
 const CATEGORY_LABEL: Record<string, string> = { tech: 'Công nghệ', code: 'Lập trình', fun: 'Vui' };
@@ -62,6 +63,11 @@ function BigTimer({ endsAt }: { endsAt: number }) {
  * BTC bấm một nút duy nhất để đi tiếp. Nút đó đổi nghĩa theo pha (BẮT ĐẦU → CÔNG BỐ
  * ĐÁP ÁN → CÂU TIẾP THEO → KẾT THÚC), nên BTC không phải nhớ đang ở đâu — và phím
  * cách bấm thay được, để tay không phải rời bàn phím giữa lúc đang dẫn chương trình.
+ *
+ * Chơi THEO ĐỘI nên màn chiếu lúc đang trả lời CỐ Ý chỉ có câu hỏi, đồng hồ và tình
+ * trạng từng đội — KHÔNG có bốn đáp án. Đáp án nằm rải trên điện thoại các thành viên
+ * (mỗi người một phần) để cả đội phải đọc to cho nhau; chiếu lên đây thì ai ngẩng đầu
+ * lên cũng đọc được hết. Bốn đáp án chỉ hiện sau khi công bố.
  *
  * Quyền thật nằm ở server (`x-admin-token`); màn hình này không có đáp án nào mà
  * người khác không có: đáp án chỉ xuất hiện trong state SAU KHI công bố.
@@ -160,7 +166,10 @@ export function QuizHost() {
 
   const PrimaryIcon = primary?.icon;
   const revealed = quiz?.phase === 'reveal';
-  const rest = Math.max(0, state.players.length - 10);
+  const teams = state.teams ?? [];
+  const rest = Math.max(0, teams.length - 10);
+  const teamSize = state.teamSize ?? 0;
+  const plannedTeams = teamSize > 0 ? quizTeamCount(state.players.length, teamSize) : 0;
 
   return (
     <Shell full>
@@ -216,6 +225,13 @@ export function QuizHost() {
                 {state.players.length}/{state.maxPlayers}
               </span>
             </h2>
+            {teamSize > 0 && (
+              <p className="mb-4 flex items-center gap-2 border-2 border-line bg-surface-2 p-3 text-lg font-bold">
+                <MessageCircle aria-hidden="true" className="h-6 w-6 shrink-0 text-secondary" />
+                Chơi theo đội, mỗi đội {teamSize} người — chia ngẫu nhiên khi bấm Bắt đầu
+                {state.players.length > 0 && ` (dự kiến ${plannedTeams} đội)`}.
+              </p>
+            )}
             {state.players.length === 0 ? (
               <p className="py-10 text-center text-xl text-muted">Đang chờ người chơi quét mã…</p>
             ) : (
@@ -252,7 +268,7 @@ export function QuizHost() {
                   {LEVEL_LABEL[quiz.level]}
                 </span>
                 <span className="text-lg font-bold tabular-nums text-muted">
-                  Đã chọn {quiz.answered}/{state.players.length}
+                  Đã chốt {quiz.answered}/{teams.length} đội
                 </span>
               </div>
               {revealed ? (
@@ -268,13 +284,21 @@ export function QuizHost() {
               <p className="break-words font-display text-3xl font-black leading-snug lg:text-5xl">{quiz.text}</p>
             </div>
 
-            <QuizOptions
-              options={quiz.options}
-              picked={null}
-              correct={revealed ? quiz.correct : undefined}
-              distribution={revealed ? quiz.distribution : undefined}
-              size="xl"
-            />
+            {revealed && quiz.options ? (
+              <QuizOptions
+                options={quiz.options}
+                picked={null}
+                correct={quiz.correct}
+                distribution={quiz.distribution}
+                size="xl"
+              />
+            ) : (
+              // Không chiếu đáp án: đây là chỗ để nhắc cả hội trường rằng phải NÓI CHUYỆN.
+              <p className="card flex items-center gap-4 p-6 text-2xl font-bold text-muted lg:text-3xl">
+                <MessageCircle aria-hidden="true" className="h-10 w-10 shrink-0 text-secondary" />
+                Đáp án nằm trên điện thoại từng người — đọc to cho đội trưởng, bàn bạc rồi chốt!
+              </p>
+            )}
 
             {revealed && quiz.explain && (
               <p className="flex items-start gap-3 border-2 border-line bg-surface p-4 text-xl">
@@ -284,19 +308,20 @@ export function QuizHost() {
             )}
           </div>
 
-          <aside aria-label="Bảng xếp hạng">
+          <aside aria-label="Bảng xếp hạng đội">
             <h2 className="mb-3 flex items-center gap-3 font-display text-2xl font-black uppercase">
               <Trophy aria-hidden="true" className="h-7 w-7 text-accent" />
-              Bảng xếp hạng
+              Bảng xếp hạng đội
             </h2>
             <LiveBoard
-              players={state.players}
+              teams={teams}
               limit={10}
               phase={revealed ? 'reveal' : 'question'}
+              showCaptain={!revealed}
               large
               motion="always"
             />
-            {rest > 0 && <p className="mt-3 text-center text-muted">và {rest} người chơi khác</p>}
+            {rest > 0 && <p className="mt-3 text-center text-muted">và {rest} đội khác</p>}
           </aside>
         </section>
       )}

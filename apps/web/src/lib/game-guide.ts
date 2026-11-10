@@ -59,12 +59,14 @@ export const GAME_GUIDE: Record<GameKind, GameGuide> = {
   },
   quiz: {
     steps: [
-      `Cả phòng cùng xem một câu hỏi, mỗi câu có ${QUIZ_QUESTION_MS / 1000} giây.`,
-      'Chọn A, B, C hoặc D — chọn rồi là chốt, không đổi được.',
-      'Có 2 quyền, mỗi quyền dùng một lần: 50:50 (bỏ 2 đáp án sai) và x2 điểm.',
-      'x2 chỉ dùng được từ câu mức Vừa trở lên (từ câu 11).',
+      `Chơi theo ĐỘI, BTC chia ngẫu nhiên. Mỗi câu có ${QUIZ_QUESTION_MS / 1000} giây.`,
+      'Màn chiếu chỉ có câu hỏi. Mỗi người chỉ thấy MỘT PHẦN đáp án trên điện thoại.',
+      'Đọc to đáp án của bạn cho cả đội nghe, rồi cùng bàn.',
+      'Mỗi câu một ĐỘI TRƯỞNG (đổi vòng): chỉ thấy nút A–D, không thấy chữ.',
+      'Chỉ đội trưởng chốt được — chốt là hết đổi, cả đội cùng một đáp án.',
+      'Cả đội có 2 quyền, mỗi quyền một lần: 50:50 và x2 điểm (từ câu 11).',
     ],
-    scoring: 'Đúng được 600–1000 điểm: chọn càng nhanh điểm càng cao. Sai hoặc bỏ trống 0 điểm.',
-    tip: 'Dùng quyền TRƯỚC khi chốt đáp án. x2 mà sai thì mất quyền, nên chỉ dùng khi chắc.',
+    scoring: 'Điểm tính cho cả ĐỘI: đúng được 600–1000 điểm, chốt càng nhanh càng cao. Sai hoặc chưa chốt 0 điểm.',
+    tip: 'Đọc kèm chữ cái (A, B, C, D) cho đội trưởng. Dùng quyền TRƯỚC khi chốt; x2 mà sai thì mất quyền.',
   },
 };

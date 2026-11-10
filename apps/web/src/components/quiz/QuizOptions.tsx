@@ -2,7 +2,13 @@ import { Check, X } from 'lucide-react';
 import { QUIZ_OPTION_LETTERS } from '../../lib/types';
 
 export interface QuizOptionsProps {
-  options: string[];
+  /**
+   * Nội dung bốn đáp án. Bỏ trống khi `lettersOnly`: đội trưởng chỉ có nút A–D, còn chữ
+   * nằm ở điện thoại các đồng đội — đó là điều buộc cả đội phải nói chuyện với nhau.
+   */
+  options?: string[];
+  /** Chỉ vẽ nút A–D, KHÔNG có chữ đáp án (đội trưởng khi đội từ 2 người trở lên). */
+  lettersOnly?: boolean;
   /** Ô người chơi đã chốt, `null` = chưa chọn. */
   picked: number | null;
   /** Ô bị 50:50 loại. */
@@ -39,6 +45,7 @@ const TONES = [
  */
 export function QuizOptions({
   options,
+  lettersOnly = false,
   picked,
   hidden = [],
   correct,
@@ -49,10 +56,15 @@ export function QuizOptions({
 }: QuizOptionsProps) {
   const revealed = correct !== undefined;
   const xl = size === 'xl';
+  const texts = options ?? QUIZ_OPTION_LETTERS.map(() => '');
 
   return (
-    <div className={`grid grid-cols-1 gap-3 ${xl ? 'md:grid-cols-2 md:gap-5' : 'sm:grid-cols-2'}`}>
-      {options.map((text, i) => {
+    <div
+      className={`grid gap-3 ${lettersOnly ? 'grid-cols-2' : 'grid-cols-1'} ${
+        xl ? 'md:grid-cols-2 md:gap-5' : lettersOnly ? '' : 'sm:grid-cols-2'
+      }`}
+    >
+      {texts.map((text, i) => {
         const isHidden = hidden.includes(i);
         const isPicked = picked === i;
         const isCorrect = revealed && i === correct;
@@ -82,7 +94,7 @@ export function QuizOptions({
                 xl ? 'text-2xl lg:text-3xl' : 'text-base sm:text-lg'
               } ${isHidden ? 'line-through' : ''}`}
             >
-              {isHidden ? '— đã loại —' : text}
+              {isHidden ? '— đã loại —' : lettersOnly ? '' : text}
             </span>
 
             {/* Biểu tượng kết quả: không dựa riêng vào màu cho người mù màu. */}
@@ -98,8 +110,8 @@ export function QuizOptions({
         );
 
         const className = `relative flex items-center gap-3 border-[3px] border-line text-ink transition-opacity ${
-          xl ? 'min-h-28 px-5 py-4' : 'min-h-16 px-3 py-3'
-        } ${dim ? 'opacity-40' : ''} ${isPicked && !revealed ? 'ring-4 ring-fg ring-offset-4 ring-offset-ink' : ''}`;
+          lettersOnly ? 'min-h-24 justify-center' : ''
+        } ${xl ? 'min-h-28 px-5 py-4' : 'min-h-16 px-3 py-3'} ${dim ? 'opacity-40' : ''} ${isPicked && !revealed ? 'ring-4 ring-fg ring-offset-4 ring-offset-ink' : ''}`;
         const style = { background };
 
         if (!onPick) {
@@ -116,7 +128,7 @@ export function QuizOptions({
             onClick={() => onPick(i)}
             disabled={!interactive}
             aria-pressed={isPicked}
-            aria-label={`Đáp án ${QUIZ_OPTION_LETTERS[i]}: ${text}`}
+            aria-label={lettersOnly ? `Đáp án ${QUIZ_OPTION_LETTERS[i]}` : `Đáp án ${QUIZ_OPTION_LETTERS[i]}: ${text}`}
             className={`btn btn-tile !justify-start !text-left ${className}`}
             style={style}
           >
@@ -125,5 +137,46 @@ export function QuizOptions({
         );
       })}
     </div>
+  );
+}
+
+/**
+ * Những đáp án MỘT người đọc được — phần của người đọc trong đội.
+ *
+ * Mỗi người chỉ nhận một phần bốn đáp án nên chữ cái ở đây nhảy cóc (ví dụ B và D):
+ * giữ nguyên chữ cái thật để đọc to cho đội trưởng là "B" chứ không phải "đáp án đầu".
+ * Ô bị 50:50 loại vẫn hiện nhưng gạch đi, để người đọc biết đội đã bỏ nó.
+ */
+export function ReaderOptions({
+  visible,
+  hidden = [],
+}: {
+  visible: { index: number; text: string }[];
+  hidden?: number[];
+}) {
+  return (
+    <ul className="grid grid-cols-1 gap-3" aria-label="Đáp án bạn đọc được">
+      {visible.map(({ index, text }) => {
+        const out = hidden.includes(index);
+        return (
+          <li
+            key={index}
+            className={`flex items-center gap-3 border-[3px] border-line px-3 py-3 text-ink ${out ? 'opacity-40' : ''}`}
+            style={{ background: TONES[index % TONES.length] as string }}
+          >
+            <span
+              aria-hidden="true"
+              className="grid h-10 w-10 shrink-0 place-items-center border-[3px] border-ink bg-ink font-display text-xl font-black text-white"
+            >
+              {QUIZ_OPTION_LETTERS[index]}
+            </span>
+            <span className={`min-w-0 flex-1 text-base font-bold leading-snug sm:text-lg ${out ? 'line-through' : ''}`}>
+              <span className="sr-only">Đáp án {QUIZ_OPTION_LETTERS[index]}: </span>
+              {text}
+            </span>
+          </li>
+        );
+      })}
+    </ul>
   );
 }

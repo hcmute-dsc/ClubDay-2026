@@ -3,45 +3,33 @@
  *
  * Câu hỏi đang mở KHÔNG có ở đây: cả phòng thấy chung một câu nên nó đi theo
  * `RoundState.quiz` qua SSE (xem `useRoundStream`). File này chỉ lo phần RIÊNG của
- * từng người (ô đã chọn, quyền trợ giúp) và các thao tác của BTC.
+ * từng người — vai trò trong đội và những đáp án mình được đọc — cùng các thao tác
+ * của BTC.
+ *
+ * Trò này chơi THEO ĐỘI: đáp án và quyền trợ giúp là của cả đội, nhưng chỉ ĐỘI
+ * TRƯỞNG của câu đó gọi được `answer` / `lifeline` (người khác nhận `NOT_CAPTAIN`).
  */
 import { postJson, request } from './http';
-import type { LifelineKind, QuizPhase } from './types';
+import type { LifelineKind, QuizHints, QuizMe as QuizMeShape } from './types';
 
-export interface QuizHints {
-  /** Hai đáp án bị 50:50 loại. */
-  hidden?: number[];
-  doubled?: boolean;
-}
+export type { QuizHints };
 
-export interface QuizMe {
-  index: number;
-  phase: QuizPhase;
-  /** Ô đã chốt ở câu đang mở, `null` = chưa chọn. */
-  answer: number | null;
-  /** Quyền đã dùng → ở câu số mấy. Có mặt nghĩa là hết quyền. */
-  used: Partial<Record<LifelineKind, number>>;
-  hints: QuizHints;
-  score: number;
-  streak: number;
-  correct: number;
-  wrong: number;
-  delta: number;
-  serverNow: number;
-}
+/** `QuizMe` của hợp đồng + giờ server lúc trả lời. */
+export type QuizMe = QuizMeShape & { serverNow: number };
 
 export const quizApi = {
-  /** Trạng thái riêng của mình — dùng khi vào lượt và khi tải lại trang. */
+  /** Vai trò + đáp án được đọc của mình — dùng khi vào lượt, sang câu mới và khi tải lại trang. */
   me: (roundId: string, playerId: string) =>
     request<QuizMe>(`/api/rounds/${roundId}/quiz/me?playerId=${encodeURIComponent(playerId)}`),
 
-  /** Chốt đáp án. Server KHÔNG báo đúng/sai — đáp án chỉ lộ khi BTC công bố. */
+  /** Đội trưởng chốt đáp án cho cả đội. Server KHÔNG báo đúng/sai — đáp án chỉ lộ khi BTC công bố. */
   answer: (roundId: string, playerId: string, index: number, choice: number) =>
     request<{ ok: true; choice: number }>(
       `/api/rounds/${roundId}/quiz/answer`,
       postJson({ playerId, index, choice }),
     ),
 
+  /** Đội trưởng dùng quyền trợ giúp của cả đội. */
   lifeline: (roundId: string, playerId: string, index: number, kind: LifelineKind) =>
     request<{ ok: true; kind: LifelineKind; hints: QuizHints }>(
       `/api/rounds/${roundId}/quiz/lifeline`,

@@ -63,6 +63,9 @@ export function RankTable({ rows, game }: { rows: DashboardRow[]; game: GameKind
               )}
               <Avatar name={r.name} seed={r.playerId} size={i === 0 ? 'lg' : 'md'} />
               <p className="mt-2 w-full truncate px-1 text-sm font-semibold">{r.name}</p>
+              {r.members && r.members.length > 0 && (
+                <p className="w-full truncate px-1 text-xs text-muted">{r.members.join(', ')}</p>
+              )}
               <p className="text-xs text-muted">{what}</p>
               <p className="text-xs tabular-nums text-muted">{time}</p>
               <div
@@ -103,6 +106,9 @@ export function RankTable({ rows, game }: { rows: DashboardRow[]; game: GameKind
                 <Avatar name={r.name} seed={r.playerId} />
                 <span className="min-w-0 flex-1">
                   <span className="block truncate font-semibold">{r.name}</span>
+                  {r.members && r.members.length > 0 && (
+                    <span className="block truncate text-xs text-muted">{r.members.join(', ')}</span>
+                  )}
                   <span className="block text-xs text-muted">
                     {time ? `${what} · ${time}` : what}
                   </span>

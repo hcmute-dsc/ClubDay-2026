@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
-import { House, TriangleAlert, Users } from 'lucide-react';
+import { House, TriangleAlert, Users, UsersRound } from 'lucide-react';
 import { api } from '../lib/api';
 import { loadSession } from '../lib/session';
 import { useRoundStream } from '../lib/sse';
@@ -135,6 +135,17 @@ export function Lobby() {
         </ul>
         )}
       </section>
+
+      {/* Ai là triệu phú chơi theo đội: báo trước sĩ số để người chơi biết mình sắp ngồi với ai. */}
+      {state?.game === 'quiz' && state.teamSize !== undefined && (
+        <p className="card flex items-start gap-3 p-4 text-sm font-semibold">
+          <UsersRound aria-hidden="true" className="mt-0.5 h-5 w-5 shrink-0 text-quiz" />
+          <span>
+            Đội {state.teamSize} người — chia ngẫu nhiên khi BTC bắt đầu. Mỗi câu một đội trưởng, mỗi người chỉ
+            thấy một phần đáp án, nên nhớ đọc to cho nhau.
+          </span>
+        </p>
+      )}
 
       {/*
         Luật bày SẴN ở đây, không giấu sau nút: đứng đợi BTC là khoảng thời gian
