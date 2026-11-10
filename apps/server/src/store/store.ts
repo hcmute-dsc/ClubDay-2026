@@ -4,19 +4,15 @@
  * Cố ý KHÔNG dùng SQLite/ORM: mỗi lượt chỉ 5 người, xem kết quả rồi thôi,
  * không cần truy vấn lịch sử. Xem plan v2 mục 0 để biết lý do.
  */
-import type { GameKind, Player, QuizPlayerState, QuizRoundState, Round } from './types.js';
-import { MAX_PLAYERS_BY_GAME } from '../config.js';
+import type { GameKind, Player, QuizRoundState, Round } from './types.js';
+import { MAX_PLAYERS_BY_GAME, QUIZ_TEAM_SIZE } from '../config.js';
 import { newPlayerId, newRoundId } from '../lib/id.js';
 
 const rounds = new Map<string, Round>();
 
 /** Trạng thái Ai là triệu phú lúc chưa bắt đầu. Dùng chung với snapshot khi khôi phục. */
 export function emptyQuizRound(): QuizRoundState {
-  return { questions: null, index: 0, phase: 'question', startedAt: 0, endsAt: 0, distribution: [] };
-}
-
-export function emptyQuizPlayer(): QuizPlayerState {
-  return { answer: null, answeredAt: null, streak: 0, lastDelta: 0, used: {}, hints: {} };
+  return { questions: null, index: 0, phase: 'question', startedAt: 0, endsAt: 0, distribution: [], teams: [], teamSize: 0 };
 }
 
 /**
@@ -41,6 +37,20 @@ let activeGame: GameKind | null = 'math';
  * lúc sinh ra (xem `Round.maxPlayers`).
  */
 const maxPlayers: Record<GameKind, number> = { ...MAX_PLAYERS_BY_GAME };
+
+/**
+ * Số người mỗi ĐỘI của Ai là triệu phú — BTC chỉnh ở /admin. Khác sức chứa: con số này
+ * được đọc đúng lúc BTC bấm BẮT ĐẦU, nên đổi nó khi phòng chờ đã có người vẫn có tác dụng.
+ */
+let quizTeamSize = QUIZ_TEAM_SIZE;
+
+export function getQuizTeamSize(): number {
+  return quizTeamSize;
+}
+
+export function setQuizTeamSize(value: number): void {
+  quizTeamSize = value;
+}
 
 /**
  * Trò được mở GẦN ĐÂY NHẤT — vẫn nhớ cả khi đang tạm đóng.
@@ -197,7 +207,6 @@ export function addPlayer(round: Round, name: string, now = Date.now()): Player 
     },
     memory: { level: 1, levelSentAt: 0, lastReplayAt: 0 },
     spot: { level: 1, lastPickAt: 0 },
-    quiz: emptyQuizPlayer(),
   };
   round.players.set(player.id, player);
   playerIndex.set(player.id, round.id);
@@ -269,6 +278,7 @@ export function resetAll(): void {
   activeGame = 'math';
   lastGame = 'math';
   Object.assign(maxPlayers, MAX_PLAYERS_BY_GAME);
+  quizTeamSize = QUIZ_TEAM_SIZE;
 }
 
 /** Dùng khi khôi phục từ snapshot lúc boot. */

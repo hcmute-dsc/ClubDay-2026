@@ -23,7 +23,7 @@
  */
 export * from '@clubday/contract';
 
-import type { GameKind, LifelineKind, QuizPhase, RoundStatus } from '@clubday/contract';
+import type { GameKind, LifelineKind, QuizHints, QuizPhase, RoundStatus } from '@clubday/contract';
 
 export interface Question {
   prompt: string;
@@ -102,11 +102,22 @@ export interface SpotPlayerState {
   lastPickAt: number;
 }
 
-/** TRACK E — Ai là triệu phú. */
-export interface QuizPlayerState {
+/**
+ * TRACK E — một ĐỘI của Ai là triệu phú. Mọi thứ từng thuộc về từng người (đáp án,
+ * quyền trợ giúp, chuỗi đúng) nay thuộc về ĐỘI: cả đội chỉ có một đáp án mỗi câu.
+ */
+export interface QuizTeam {
+  id: string;
+  name: string;
+  color: string;
+  /** Thứ tự vào đội — cũng là thứ tự xoay vòng đội trưởng. */
+  memberIds: string[];
+  score: number;
+  correct: number;
+  wrong: number;
   /**
-   * Đáp án người này đã CHỐT cho câu đang mở (0–3), `null` = chưa chọn.
-   * Chốt là chốt: chọn rồi không đổi được, giống "đây là đáp án cuối cùng".
+   * Đáp án ĐỘI đã chốt cho câu đang mở (0–3), `null` = chưa chốt. Chốt là chốt:
+   * chọn rồi không đổi được.
    */
   answer: number | null;
   /** ⏱ Lúc SERVER nhận đáp án — mốc tính phần thưởng tốc độ. */
@@ -116,8 +127,8 @@ export interface QuizPlayerState {
   /** Điểm nhận được ở câu gần nhất (0 nếu sai / bỏ trống). */
   lastDelta: number;
   /**
-   * Quyền trợ giúp ĐÃ DÙNG → dùng ở câu số mấy. Có mặt là hết quyền. Giữ số câu
-   * chứ không phải boolean để màn hình biết "50:50 đã dùng ở câu 7".
+   * Quyền trợ giúp ĐÃ DÙNG → dùng ở câu số mấy. Có mặt là hết quyền. Giữ số câu chứ
+   * không phải boolean để màn hình biết "50:50 đã dùng ở câu 7".
    */
   used: Partial<Record<LifelineKind, number>>;
   /**
@@ -125,13 +136,6 @@ export interface QuizPlayerState {
    * trả lời một lần lúc bấm thì F5 là mất, mà quyền đã bị trừ.
    */
   hints: QuizHints;
-}
-
-export interface QuizHints {
-  /** Hai đáp án bị loại bởi 50:50. */
-  hidden?: number[];
-  /** Câu này được nhân đôi điểm. */
-  doubled?: boolean;
 }
 
 export interface Player {
@@ -167,7 +171,6 @@ export interface Player {
   draw: DrawPlayerState;
   memory: MemoryPlayerState;
   spot: SpotPlayerState;
-  quiz: QuizPlayerState;
 }
 
 /** Một câu của lượt Ai là triệu phú, ĐÃ xáo đáp án. `answer` là chỉ số đáp án đúng. */
@@ -189,8 +192,12 @@ export interface QuizRoundState {
   /** ⏱ Mốc của CÂU HIỆN TẠI — khác `Round.endsAt` (cầu chì cả lượt). */
   startedAt: number;
   endsAt: number;
-  /** Số người chọn từng đáp án — chỉ có nghĩa ở pha `reveal`. */
+  /** Số ĐỘI chọn từng đáp án — chỉ có nghĩa ở pha `reveal`. */
   distribution: number[];
+  /** Các đội, chia khi BTC bấm BẮT ĐẦU; mảng rỗng khi còn ở phòng chờ. */
+  teams: QuizTeam[];
+  /** Số người mỗi đội đã CHỐT lúc bắt đầu (0 = chưa bắt đầu, lúc đó dùng giá trị BTC đang đặt). */
+  teamSize: number;
 }
 
 export interface Round {

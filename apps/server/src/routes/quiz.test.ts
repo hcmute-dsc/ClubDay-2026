@@ -54,6 +54,15 @@ async function startedRound(n = 2) {
 const state = async (roundId: string) =>
   (await app!.inject({ method: 'GET', url: `/api/rounds/${roundId}/state` })).json();
 
+const meOf = async (roundId: string, playerId: string) =>
+  (await app!.inject({ method: 'GET', url: `/api/rounds/${roundId}/quiz/me?playerId=${playerId}` })).json();
+
+/** Đội trưởng của câu đang mở, hỏi qua chính API người chơi dùng. */
+async function captainOf(roundId: string, players: string[]): Promise<string> {
+  for (const id of players) if ((await meOf(roundId, id)).role === 'captain') return id;
+  throw new Error('không có đội trưởng');
+}
+
 describe('sức chứa & vào lượt', () => {
   it('mặc định 50 người, không theo MAX_PLAYERS chung', async () => {
     app = await boot();
@@ -71,13 +80,20 @@ describe('không lộ đáp án', () => {
     expect(st.quiz).not.toHaveProperty('explain');
   });
 
+  it('đang trả lời: state công khai không có bốn đáp án', async () => {
+    const { roundId } = await startedRound(4);
+    const st = await state(roundId);
+    expect(st.quiz).not.toHaveProperty('options');
+    expect(st.teams).toHaveLength(1);
+  });
+
   it('trả lời xong server cũng không nói đúng hay sai', async () => {
     const { roundId, players } = await startedRound(2);
     await new Promise((r) => setTimeout(r, 400)); // qua ngưỡng "quá nhanh"
     const res = await app!.inject({
       method: 'POST',
       url: `/api/rounds/${roundId}/quiz/answer`,
-      payload: { playerId: players[0], index: 0, choice: 0 },
+      payload: { playerId: await captainOf(roundId, players), index: 0, choice: 0 },
     });
     expect(res.statusCode).toBe(200);
     expect(res.json()).not.toHaveProperty('correct');
@@ -136,9 +152,10 @@ describe('xác thực người chơi & dữ liệu rác', () => {
 
   it('quyền không có thật → 400; 50:50 dùng lần hai → 409', async () => {
     const { roundId, players } = await startedRound();
+    const cap = await captainOf(roundId, players);
     const use = (kind: string) =>
       app!.inject({
-        method: 'POST', url: `/api/rounds/${roundId}/quiz/lifeline`, payload: { playerId: players[0], index: 0, kind },
+        method: 'POST', url: `/api/rounds/${roundId}/quiz/lifeline`, payload: { playerId: cap, index: 0, kind },
       });
     expect((await use('hack')).statusCode).toBe(400);
     expect((await use('fifty')).statusCode).toBe(200);
@@ -155,9 +172,12 @@ describe('xác thực người chơi & dữ liệu rác', () => {
 
   it('x2 ở câu dễ → 409 LIFELINE_LOCKED; sau đó vẫn còn quyền để dùng ở câu Vừa', async () => {
     const { roundId, players } = await startedRound();
-    const post = (index: number) =>
+    const post = async (index: number) =>
       app!.inject({
-        method: 'POST', url: `/api/rounds/${roundId}/quiz/lifeline`, payload: { playerId: players[0], index, kind: 'double' },
+        method: 'POST',
+        url: `/api/rounds/${roundId}/quiz/lifeline`,
+        // đội trưởng đổi người theo từng câu nên hỏi lại mỗi lần
+        payload: { playerId: await captainOf(roundId, players), index, kind: 'double' },
       });
     const locked = await post(0);
     expect(locked.statusCode).toBe(409);
@@ -241,11 +261,16 @@ describe('import câu hỏi', () => {
 
     let st = await state(roundId);
     expect(st.quiz).toMatchObject({ total: 1, text: 'Thủ đô của Việt Nam là gì?' });
-    expect([...st.quiz.options].sort()).toEqual(['Sai 1', 'Sai 2', 'Sai 3', 'Đúng']);
+    expect(st.quiz).not.toHaveProperty('options'); // đang trả lời: không ai đọc được từ màn chiếu
+
+    // Đội 1 người: người đó tự đọc được cả bốn đáp án qua phần riêng của mình.
+    const me = await meOf(roundId, playerId);
+    expect(me.role).toBe('captain');
+    expect(me.visible.map((v: { text: string }) => v.text).sort()).toEqual(['Sai 1', 'Sai 2', 'Sai 3', 'Đúng']);
 
     // chọn đúng ô chứa chữ "Đúng" rồi công bố → phải được điểm
     await new Promise((r) => setTimeout(r, 400));
-    const choice = st.quiz.options.indexOf('Đúng');
+    const choice = me.visible.find((v: { text: string }) => v.text === 'Đúng').index;
     await app.inject({ method: 'POST', url: `/api/rounds/${roundId}/quiz/answer`, payload: { playerId, index: 0, choice } });
     st = await state(roundId);
     expect(st.quiz.phase).toBe('reveal');
@@ -314,5 +339,107 @@ describe('import câu hỏi', () => {
     const res = await app.inject({ method: 'GET', url: '/api/admin/quiz/questions' });
     expect(res.statusCode).toBe(401);
     expect(res.body).not.toContain('answer');
+  });
+});
+
+// ───────────────────────── chơi theo đội ─────────────────────────
+
+describe('chơi theo đội', () => {
+  it('đội trưởng không đọc được đáp án, người đọc thì có — qua đúng API riêng của mỗi người', async () => {
+    const { roundId, players } = await startedRound(3); // 1 đội 3 người
+    const all = await Promise.all(players.map((id) => meOf(roundId, id)));
+    const captain = all.find((m) => m.role === 'captain');
+    const readers = all.filter((m) => m.role === 'reader');
+    expect(captain.visible).toEqual([]);
+    expect(readers).toHaveLength(2);
+    for (const r of readers) expect(r.visible.length).toBeGreaterThanOrEqual(1);
+    // cả đội cùng một danh tính
+    expect(new Set(all.map((m) => m.teamId)).size).toBe(1);
+    expect(all.every((m) => m.captainId === captain.captainId)).toBe(true);
+  });
+
+  it('người đọc chốt đáp án → 403 NOT_CAPTAIN', async () => {
+    const { roundId, players } = await startedRound(3);
+    const cap = await captainOf(roundId, players);
+    const reader = players.find((id) => id !== cap)!;
+    await new Promise((r) => setTimeout(r, 400));
+    const res = await app!.inject({
+      method: 'POST', url: `/api/rounds/${roundId}/quiz/answer`, payload: { playerId: reader, index: 0, choice: 0 },
+    });
+    expect(res.statusCode).toBe(403);
+    expect(res.json()).toMatchObject({ error: 'NOT_CAPTAIN' });
+  });
+
+  it('người đọc dùng quyền trợ giúp → 403 NOT_CAPTAIN', async () => {
+    const { roundId, players } = await startedRound(3);
+    const cap = await captainOf(roundId, players);
+    const reader = players.find((id) => id !== cap)!;
+    const res = await app!.inject({
+      method: 'POST', url: `/api/rounds/${roundId}/quiz/lifeline`, payload: { playerId: reader, index: 0, kind: 'fifty' },
+    });
+    expect(res.statusCode).toBe(403);
+  });
+
+  it('đội trưởng chốt xong thì cả đội thấy "đã chốt"', async () => {
+    const { roundId, players } = await startedRound(6); // 2 đội để câu còn mở
+    const cap = await captainOf(roundId, players);
+    await new Promise((r) => setTimeout(r, 400));
+    const res = await app!.inject({
+      method: 'POST', url: `/api/rounds/${roundId}/quiz/answer`, payload: { playerId: cap, index: 0, choice: 1 },
+    });
+    expect(res.statusCode).toBe(200);
+    const mate = (await meOf(roundId, cap)).teamId;
+    const others = await Promise.all(players.map((id) => meOf(roundId, id)));
+    for (const m of others.filter((o) => o.teamId === mate)) expect(m.answer).toBe(1);
+  });
+
+  it('me khi lượt còn ở phòng chờ → 409 (chưa chia đội)', async () => {
+    app = await boot();
+    const created = await app.inject({ method: 'POST', url: '/api/admin/rounds', headers: auth, payload: { game: 'quiz' } });
+    const { roundId } = created.json<{ roundId: string }>();
+    const join = await app.inject({ method: 'POST', url: '/api/rounds/join', payload: { name: 'An', roundId } });
+    const { playerId } = join.json<{ playerId: string }>();
+    const res = await app.inject({ method: 'GET', url: `/api/rounds/${roundId}/quiz/me?playerId=${playerId}` });
+    expect(res.statusCode).toBe(409);
+  });
+});
+
+describe('BTC đặt số người mỗi đội', () => {
+  const setSize = (value: unknown, headers: Record<string, string> = auth) =>
+    app!.inject({ method: 'POST', url: '/api/admin/quiz/team-size', headers, payload: { value } });
+
+  it('không có token → 401', async () => {
+    app = await boot();
+    expect((await setSize(4, {})).statusCode).toBe(401);
+  });
+
+  it.each([1, 11, 2.5, 'ba'])('giá trị %s ngoài 2–10 → 400', async (v) => {
+    app = await boot();
+    expect((await setSize(v)).statusCode).toBe(400);
+  });
+
+  it('đặt được; /api/config và danh sách lượt của BTC báo lại', async () => {
+    app = await boot();
+    expect((await app.inject({ method: 'GET', url: '/api/config' })).json().quizTeamSize).toBe(3);
+    expect((await setSize(5)).json()).toEqual({ quizTeamSize: 5 });
+    expect((await app.inject({ method: 'GET', url: '/api/config' })).json().quizTeamSize).toBe(5);
+    expect((await app.inject({ method: 'GET', url: '/api/admin/rounds', headers: auth })).json().quizTeamSize).toBe(5);
+  });
+
+  it('đổi khi phòng chờ đã có người vẫn ăn: các đội chia theo số mới lúc bắt đầu', async () => {
+    app = await boot();
+    const created = await app.inject({ method: 'POST', url: '/api/admin/rounds', headers: auth, payload: { game: 'quiz' } });
+    const { roundId } = created.json<{ roundId: string }>();
+    for (let i = 0; i < 8; i++) {
+      await app.inject({ method: 'POST', url: '/api/rounds/join', payload: { name: `P${i}`, roundId } });
+    }
+    expect((await state(roundId)).teamSize).toBe(3);
+    await setSize(4);
+    expect((await state(roundId)).teamSize).toBe(4);
+
+    await app.inject({ method: 'POST', url: `/api/rounds/${roundId}/start`, headers: auth, payload: {} });
+    const st = await state(roundId);
+    expect(st.teams).toHaveLength(2);
+    expect(st.teams.map((t: { members: unknown[] }) => t.members.length)).toEqual([4, 4]);
   });
 });

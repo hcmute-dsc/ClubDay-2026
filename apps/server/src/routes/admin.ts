@@ -6,12 +6,15 @@ import {
   getActiveGame,
   getLastGame,
   getMaxPlayers,
+  getQuizTeamSize,
+  setQuizTeamSize,
   resetAll,
   setMaxPlayers,
+  touch,
 } from '../store/store.js';
 import { selectActiveGame, skipRound } from '../store/lobby.js';
 import { toRoundState } from '../store/state.js';
-import { GAME_KINDS, maxPlayersCap } from '../store/types.js';
+import { GAME_KINDS, QUIZ_TEAM_SIZE_MAX, QUIZ_TEAM_SIZE_MIN, maxPlayersCap } from '../store/types.js';
 import { requireAdmin } from './admin-guard.js';
 import { getQuizBankInfo } from '../services/quiz-bank-store.js';
 
@@ -30,6 +33,10 @@ const MaxPlayersBody = z
   })
   // Trần mỗi trò một khác (Ai là triệu phú tới 50), nên chỉ kiểm được sau khi biết là trò nào.
   .refine((b) => b.value <= maxPlayersCap(b.game));
+
+const TeamSizeBody = z.object({
+  value: z.number().int().min(QUIZ_TEAM_SIZE_MIN).max(QUIZ_TEAM_SIZE_MAX),
+});
 
 export async function adminRoutes(app: FastifyInstance): Promise<void> {
   app.addHook('preHandler', requireAdmin);
@@ -67,12 +74,26 @@ export async function adminRoutes(app: FastifyInstance): Promise<void> {
     return { maxPlayers: getMaxPlayers() };
   });
 
+  /**
+   * BTC đặt số người mỗi đội của Ai là triệu phú. Server đọc con số này đúng lúc bấm
+   * BẮT ĐẦU, nên chỉnh được cả khi phòng chờ đã có người; các phòng chờ đang mở được
+   * đẩy lại trạng thái để màn hình chờ hiện số mới ngay.
+   */
+  app.post('/api/admin/quiz/team-size', async (req, reply) => {
+    const parsed = TeamSizeBody.safeParse(req.body);
+    if (!parsed.success) return reply.code(400).send({ error: 'BAD_REQUEST' });
+    setQuizTeamSize(parsed.data.value);
+    for (const r of allRounds()) if (r.game === 'quiz' && r.status === 'lobby') touch(r);
+    return { quizTeamSize: getQuizTeamSize() };
+  });
+
   /** Danh sách lượt gần đây — màn hình BTC. */
   app.get('/api/admin/rounds', async () => ({
     activeGame: getActiveGame(),
     /** Trò mở gần đây nhất — để /admin có nút "Mở lại" khi đang tạm đóng. */
     lastGame: getLastGame(),
     maxPlayers: getMaxPlayers(),
+    quizTeamSize: getQuizTeamSize(),
     quizBank: getQuizBankInfo(),
     rounds: allRounds()
       .sort((a, b) => b.createdAt - a.createdAt)

@@ -30,6 +30,9 @@ import {
   GAME_KINDS,
   MAX_PLAYERS,
   MAX_PLAYERS_DEFAULT_QUIZ,
+  QUIZ_TEAM_SIZE_DEFAULT,
+  QUIZ_TEAM_SIZE_MAX,
+  QUIZ_TEAM_SIZE_MIN,
   maxPlayersCap,
   type GameKind,
 } from './store/types.js';
@@ -104,6 +107,22 @@ function clampPlayers(raw: string | undefined, key: string, fallback: number, ga
 }
 
 export const MAX_PLAYERS_BY_GAME: Record<GameKind, number> = readMaxPlayers();
+
+/** Số người mỗi đội của Ai là triệu phú lúc khởi động; BTC chỉnh tiếp ở /admin. */
+function readQuizTeamSize(): number {
+  const raw = process.env.QUIZ_TEAM_SIZE;
+  if (raw === undefined || raw.trim() === '') return QUIZ_TEAM_SIZE_DEFAULT;
+  const n = Number(raw);
+  if (!Number.isInteger(n) || n < QUIZ_TEAM_SIZE_MIN || n > QUIZ_TEAM_SIZE_MAX) {
+    console.warn(
+      `  ⚠️  QUIZ_TEAM_SIZE="${raw}" không hợp lệ (cần số nguyên ${QUIZ_TEAM_SIZE_MIN}–${QUIZ_TEAM_SIZE_MAX}) — dùng ${QUIZ_TEAM_SIZE_DEFAULT}.`,
+    );
+    return QUIZ_TEAM_SIZE_DEFAULT;
+  }
+  return n;
+}
+
+export const QUIZ_TEAM_SIZE = readQuizTeamSize();
 
 /** Cảnh báo to nếu chưa đặt ADMIN_TOKEN — trang /admin sẽ không được bảo vệ. */
 export function warnIfInsecure(): void {

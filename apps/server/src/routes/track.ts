@@ -40,6 +40,7 @@ const CODE_STATUS: Record<string, number> = {
   LIFELINE_USED: 409,
   LIFELINE_LOCKED: 409,
   WRONG_PHASE: 409,
+  NOT_CAPTAIN: 403,
 };
 
 /** HTTP status cho một mã lỗi nghiệp vụ. Mã lạ → 400 (lỗi phía client). */

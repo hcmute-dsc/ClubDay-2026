@@ -28,12 +28,14 @@ import {
  * TRACK E — AI LÀ TRIỆU PHÚ (API).
  *
  * Ba nhóm route, theo AI được gọi:
- *   - người chơi:  `me`, `answer`, `lifeline`  — xác thực bằng playerId như mọi game
+ *   - người chơi:  `me`, `answer`, `lifeline`  — xác thực bằng playerId như mọi game;
+ *                  `answer`/`lifeline` chỉ nhận từ ĐỘI TRƯỞNG của câu đó (403 NOT_CAPTAIN)
  *   - BTC:         `advance`                     — xác thực bằng x-admin-token
  *   - mọi người:   câu hỏi đang mở đi qua SSE/`state` chung (xem store/state.ts)
  *
- * Câu hỏi KHÔNG có route riêng: cả phòng thấy cùng một câu cùng lúc nên nó nằm
- * trong `RoundState.quiz` và đi theo luồng SSE sẵn có.
+ * Câu HỎI không có route riêng: cả phòng thấy cùng một câu cùng lúc nên nó nằm trong
+ * `RoundState.quiz` và đi theo luồng SSE sẵn có. Bốn ĐÁP ÁN thì ngược lại: lúc đang trả
+ * lời chúng chỉ đi qua `me`, mỗi người một phần.
  */
 
 const AnswerBody = z.object({
@@ -87,7 +89,10 @@ export async function quizRoutes(app: FastifyInstance): Promise<void> {
     const located = locatePlayer(id, playerId, 'quiz');
     if (!located) return reply.code(404).send({ error: 'NOT_FOUND' });
 
-    return { ...quizMe(located.round, located.player), serverNow: Date.now() };
+    // Chưa chia đội (lượt còn ở phòng chờ) thì chưa có vai trò nào để nói tới.
+    const me = quizMe(located.round, located.player);
+    if (!me) return reply.code(409).send({ error: 'WRONG_PHASE' });
+    return { ...me, serverNow: Date.now() };
   });
 
   /** Chốt đáp án A/B/C/D. Điểm do server quyết định khi công bố — xem quiz-session.ts. */

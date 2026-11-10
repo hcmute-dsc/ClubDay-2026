@@ -117,6 +117,55 @@ export const QUIZ_QUESTION_MS = 15_000;
 export const QUIZ_OPTION_COUNT = 4;
 export const QUIZ_OPTION_LETTERS = ['A', 'B', 'C', 'D'] as const;
 
+// ── Ai là triệu phú: chơi THEO ĐỘI ──
+//
+// Cả lượt chia thành các đội. Một đội chỉ có MỘT đáp án mỗi câu và các thành viên
+// không ai tự đủ thông tin để trả lời một mình:
+//   - Màn hình chiếu chỉ hiện CÂU HỎI, không hiện bốn đáp án.
+//   - Mỗi câu một thành viên làm ĐỘI TRƯỞNG (xoay vòng): chỉ đội trưởng bấm chốt
+//     được, nhưng điện thoại của đội trưởng chỉ có nút A–D, không có chữ.
+//   - Các thành viên còn lại (người đọc) mỗi người chỉ thấy MỘT PHẦN các đáp án.
+// → Phải đọc to cho nhau, ghép thông tin, bàn rồi đội trưởng mới chốt.
+
+/** Số người mỗi đội: BTC đặt ở /admin trong khoảng này. */
+export const QUIZ_TEAM_SIZE_MIN = 2;
+export const QUIZ_TEAM_SIZE_MAX = 10;
+export const QUIZ_TEAM_SIZE_DEFAULT = 3;
+
+/**
+ * Danh tính của đội thứ `index` (0 = đội đầu): tên màu + mã màu để tô trên màn hình.
+ * Đủ cho 50 người chia đội 2 (25 đội); quá 12 đội thì thêm số thứ tự phía sau.
+ */
+const TEAM_IDENTITIES = [
+  { name: 'Đội Cam', color: '#ff7a1a' },
+  { name: 'Đội Xanh', color: '#2f80ff' },
+  { name: 'Đội Hồng', color: '#ff4d9d' },
+  { name: 'Đội Lục', color: '#22c55e' },
+  { name: 'Đội Vàng', color: '#f5c518' },
+  { name: 'Đội Tím', color: '#9b6bff' },
+  { name: 'Đội Đỏ', color: '#ef3b3b' },
+  { name: 'Đội Lam', color: '#14c2d8' },
+  { name: 'Đội Nâu', color: '#b0703a' },
+  { name: 'Đội Chanh', color: '#a3e635' },
+  { name: 'Đội Đen', color: '#52525b' },
+  { name: 'Đội Bạc', color: '#b8bcc8' },
+] as const;
+
+export function quizTeamIdentity(index: number): { name: string; color: string } {
+  const base = TEAM_IDENTITIES[index % TEAM_IDENTITIES.length]!;
+  const lap = Math.floor(index / TEAM_IDENTITIES.length);
+  return { name: lap === 0 ? base.name : `${base.name} ${lap + 1}`, color: base.color };
+}
+
+/**
+ * Chia `players` người thành bao nhiêu đội khi mỗi đội MONG MUỐN `teamSize` người.
+ * Làm tròn tới số đội gần nhất (7 người, đội 3 → 2 đội 4+3) và luôn có ít nhất một
+ * đội, nên sĩ số các đội lệch nhau tối đa 1 người.
+ */
+export function quizTeamCount(players: number, teamSize: number): number {
+  return Math.max(1, Math.round(players / Math.max(1, teamSize)));
+}
+
 /**
  * ĐIỂM mỗi câu đúng = `QUIZ_BASE_POINTS` + phần thưởng tốc độ (tối đa
  * `QUIZ_SPEED_POINTS`, giảm dần theo thời gian đã dùng). Đúng ngay giây đầu được
@@ -236,13 +285,18 @@ export interface QuizPublic {
   category: string;
   /** 1 = dễ, 2 = vừa, 3 = khó. */
   level: 1 | 2 | 3;
-  options: string[];
-  /** Bao nhiêu người đã chốt đáp án câu này. */
+  /**
+   * Bốn đáp án — CHỈ có ở pha `reveal`. Lúc đang trả lời, đáp án đi riêng tới từng
+   * người (xem `QuizMe.visible`), mỗi người một phần; để chúng lọt vào đây thì cả
+   * phòng đọc được hết từ màn hình chiếu và trò chơi mất ý nghĩa.
+   */
+  options?: string[];
+  /** Bao nhiêu ĐỘI đã chốt đáp án câu này. */
   answered: number;
   // Chỉ có ở pha `reveal`:
   /** Chỉ số đáp án đúng (0–3). */
   correct?: number;
-  /** Số người chọn từng đáp án. */
+  /** Số ĐỘI chọn từng đáp án. */
   distribution?: number[];
   explain?: string;
 }
@@ -257,10 +311,74 @@ export interface RoundStatePlayer {
   // Chỉ Ai là triệu phú điền các field dưới đây (trò khác để trống):
   /** Hạng hiện tại — server xếp, client không tự sắp lại để khỏi lệch luật hoà điểm. */
   rank?: number;
-  /** Đã chốt đáp án câu đang mở chưa. */
+  /** Đội của người này đã chốt đáp án câu đang mở chưa. */
   answered?: boolean;
-  /** Điểm vừa nhận ở câu gần nhất (0 nếu sai / bỏ trống). */
+  /** Điểm đội vừa nhận ở câu gần nhất (0 nếu sai / bỏ trống). */
   delta?: number;
+  /** Đội của người này (chỉ Ai là triệu phú, sau khi bắt đầu). */
+  teamId?: string;
+}
+
+/** Kết quả quyền trợ giúp của CÂU ĐANG MỞ — của cả đội. */
+export interface QuizHints {
+  /** Hai đáp án bị 50:50 loại. */
+  hidden?: number[];
+  /** Câu này được nhân đôi điểm. */
+  doubled?: boolean;
+}
+
+/**
+ * Phần RIÊNG của một người chơi trong Ai là triệu phú (`GET /quiz/me`): vai trò của họ
+ * ở câu đang mở và những đáp án họ được phép đọc. Đây là chỗ DUY NHẤT đáp án đi ra
+ * trước pha công bố, và mỗi người chỉ nhận phần của mình.
+ */
+export interface QuizMe {
+  index: number;
+  phase: QuizPhase;
+  teamId: string;
+  teamName: string;
+  teamColor: string;
+  /** `captain` = được chốt đáp án câu này; `reader` = chỉ đọc đáp án cho đội. */
+  role: 'captain' | 'reader';
+  captainId: string;
+  captainName: string;
+  /**
+   * Đáp án người này đọc được (chỉ ở pha `question`). Đội trưởng nhận mảng rỗng — chỉ
+   * thấy nút A–D — trừ khi đội chỉ có một người. Đã loại các ô bị 50:50 gạch.
+   */
+  visible: { index: number; text: string }[];
+  /** Đáp án ĐỘI đã chốt cho câu đang mở, `null` = chưa chốt. */
+  answer: number | null;
+  /** Quyền trợ giúp của ĐỘI đã dùng → ở câu số mấy. */
+  used: Partial<Record<LifelineKind, number>>;
+  hints: QuizHints;
+  /** Điểm, chuỗi đúng, số câu đúng/sai của ĐỘI. */
+  score: number;
+  streak: number;
+  correct: number;
+  wrong: number;
+  /** Điểm đội nhận ở câu vừa công bố. */
+  delta: number;
+}
+
+/** Một đội trong Ai là triệu phú, như cả phòng nhìn thấy. */
+export interface QuizTeamPublic {
+  id: string;
+  name: string;
+  /** Mã màu CSS của đội. */
+  color: string;
+  members: { id: string; name: string }[];
+  /** Đội trưởng của CÂU ĐANG MỞ — người duy nhất chốt được đáp án. */
+  captainId: string;
+  score: number;
+  /** Hạng — server xếp, client không tự sắp lại. */
+  rank: number;
+  /** Đội đã chốt đáp án câu đang mở chưa. */
+  answered: boolean;
+  /** Điểm đội vừa nhận ở câu gần nhất. */
+  delta: number;
+  correct: number;
+  wrong: number;
 }
 
 /** View-model của một lượt, gửi qua REST và SSE. */
@@ -278,6 +396,10 @@ export interface RoundState {
   target?: { id: string; labelVi: string };
   /** Chỉ có ở Ai là triệu phú, và chỉ khi lượt đang chơi. */
   quiz?: QuizPublic;
+  /** Chỉ Ai là triệu phú: số người mỗi đội (BTC đặt) — phòng chờ báo trước cho người chơi. */
+  teamSize?: number;
+  /** Chỉ Ai là triệu phú, từ lúc bắt đầu: các đội đã chia, ĐÃ xếp hạng. */
+  teams?: QuizTeamPublic[];
   players: RoundStatePlayer[];
 }
 
@@ -293,4 +415,6 @@ export interface DashboardRow {
   msToFinish: number | null;
   solved: boolean;
   flagged: boolean;
+  /** Chỉ Ai là triệu phú: dòng này là một ĐỘI — tên các thành viên. */
+  members?: string[];
 }

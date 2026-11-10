@@ -19,6 +19,7 @@ async function loadWith(env: Record<string, string>) {
   vi.unstubAllEnvs();
   // Xoá sạch mọi biến của lần trước, kể cả biến từ .env thật của máy đang chạy.
   vi.stubEnv('MAX_PLAYERS', '');
+  vi.stubEnv('QUIZ_TEAM_SIZE', '');
   for (const g of GAME_KINDS) vi.stubEnv(`MAX_PLAYERS_${g.toUpperCase()}`, '');
   for (const [k, v] of Object.entries(env)) vi.stubEnv(k, v);
   return import('./config.js');
@@ -99,5 +100,24 @@ describe('config — Ai là triệu phú (cả khán phòng)', () => {
     vi.spyOn(console, 'warn').mockImplementation(() => undefined);
     const { MAX_PLAYERS_BY_GAME } = await loadWith({ MAX_PLAYERS_MATH: '30' });
     expect(MAX_PLAYERS_BY_GAME.math).toBe(MAX_PLAYERS);
+  });
+});
+
+describe('config — số người mỗi đội của Ai là triệu phú', () => {
+  it('không đặt gì thì mặc định 3', async () => {
+    const { QUIZ_TEAM_SIZE } = await loadWith({});
+    expect(QUIZ_TEAM_SIZE).toBe(3);
+  });
+
+  it('QUIZ_TEAM_SIZE đặt được trong 2–10', async () => {
+    expect((await loadWith({ QUIZ_TEAM_SIZE: '2' })).QUIZ_TEAM_SIZE).toBe(2);
+    expect((await loadWith({ QUIZ_TEAM_SIZE: '10' })).QUIZ_TEAM_SIZE).toBe(10);
+  });
+
+  it.each(['1', '11', 'ba', '2.5'])('giá trị hỏng "%s" → cảnh báo và dùng mặc định, không sập', async (raw) => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    const { QUIZ_TEAM_SIZE } = await loadWith({ QUIZ_TEAM_SIZE: raw });
+    expect(QUIZ_TEAM_SIZE).toBe(3);
+    expect(warn).toHaveBeenCalled();
   });
 });
