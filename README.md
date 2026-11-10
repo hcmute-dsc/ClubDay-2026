@@ -1,6 +1,6 @@
 # ClubDay
 
-Web 5 trò chơi cho sự kiện CLB. Bốn trò đầu chơi theo lượt ở booth: mỗi **lượt tối đa 5 người** (đổi được cho từng trò, xem `MAX_PLAYERS`), chơi xong hiện dashboard của đúng nhóm đó. Trò thứ năm, **Ai là triệu phú**, là trò cho cả khán phòng (tới 50 người) — xem mục riêng bên dưới.
+Web 5 trò chơi cho sự kiện CLB. Bốn trò đầu chơi theo lượt ở booth: mỗi **lượt tối đa 5 người** (đổi được cho từng trò, xem `MAX_PLAYERS`), chơi xong hiện dashboard của đúng nhóm đó. Trò thứ năm, **Ai là triệu phú**, là trò **chơi theo đội** cho cả khán phòng (tới 50 người) — xem mục riêng bên dưới.
 
 | Game | Thời lượng | Cách chơi |
 |---|---|---|
@@ -8,25 +8,36 @@ Web 5 trò chơi cho sự kiện CLB. Bốn trò đầu chơi theo lượt ở b
 | **Vẽ hình nhanh** | 15 giây | Vẽ theo từ khoá rồi **bấm NỘP BÀI** để AI chấm — hết giờ thì tự nộp |
 | **Nhớ nhanh** | 60 giây | Nhìn chuỗi ô nháy sáng rồi lặp lại. **Điểm = cấp cao nhất vượt được** |
 | **Ô khác màu** | 45 giây | Tìm ô lệch màu trong lưới. Mỗi cấp lưới dày thêm và màu sát nhau hơn. **Điểm = cấp cao nhất vượt được** |
-| **Ai là triệu phú** | 40 câu × 15 giây | Cả phòng cùng xem một câu trên máy chiếu, chọn A/B/C/D trên điện thoại. **Chọn càng nhanh điểm càng cao** (600–1000/câu), có 2 quyền trợ giúp: 50:50 và x2 |
+| **Ai là triệu phú** | 40 câu × 15 giây | Chơi **theo đội**: máy chiếu chỉ hiện câu hỏi, các đáp án bị **chia nhỏ** cho từng thành viên nên phải đọc to cho nhau; đội trưởng (xoay vòng) mới chốt được. **Chốt càng nhanh điểm càng cao** (600–1000/câu), mỗi đội có 2 quyền trợ giúp: 50:50 và x2 |
 
 ---
 
 ## Ai là triệu phú
 
-Khác bốn trò kia: **cả phòng đi cùng nhau từng câu**, và BTC là người dẫn nhịp.
+Khác bốn trò kia: **cả phòng đi cùng nhau từng câu**, BTC là người dẫn nhịp, và người chơi **chơi theo đội** — không ai tự trả lời được một mình.
 
 **Luồng vận hành**
 
 1. Ở `/admin` bấm **Tạo lượt** của *Ai là triệu phú* → tự chuyển sang **màn hình điều khiển** `/admin/quiz/<mã>` (cũng là màn hình đem chiếu). Nó hiện mã QR để cả hội trường quét, sức chứa mặc định **50 người**.
-2. Người chơi quét QR, nhập tên, chờ ở phòng chờ.
-3. BTC bấm **Bắt đầu**. Mỗi câu có **15 giây**; trên máy chiếu hiện câu hỏi, bốn đáp án, đồng hồ lớn, số người đã chọn và **bảng xếp hạng trực tiếp** (top 10).
-4. Hết giờ — hoặc cả phòng đã chọn xong, hoặc BTC bấm **Công bố đáp án** — đáp án đúng, số người chọn từng ô và một câu giải thích được hiện ra, điểm được cộng.
-5. BTC bấm **Câu tiếp theo** (hoặc **Phím cách**; một nút duy nhất đổi nghĩa theo pha). Sau câu 40 lượt kết thúc và ra bảng xếp hạng chung cuộc.
+2. BTC đặt **số người mỗi đội** (2–10, mặc định 3, hoặc `QUIZ_TEAM_SIZE`) ở ô *Ai là triệu phú* trong `/admin`. Chỉnh được cả khi phòng chờ đã có người.
+3. Người chơi quét QR, nhập tên, chờ ở phòng chờ (phòng chờ ghi rõ "mỗi đội N người, chia ngẫu nhiên khi bắt đầu").
+4. BTC bấm **Bắt đầu**: server **chia ngẫu nhiên** người chơi thành các đội (sĩ số lệch nhau tối đa 1, ví dụ 7 người, đội 3 → 4 + 3). Mỗi đội có tên + màu riêng; điện thoại hiện đội của mình và các thành viên để tìm nhau.
+5. Mỗi câu có **15 giây**; máy chiếu hiện **câu hỏi**, đồng hồ lớn và đội nào đã chốt — **không** hiện bốn đáp án. Đáp án chỉ hiện sau khi công bố.
+6. Hết giờ — hoặc mọi đội đã chốt, hoặc BTC bấm **Công bố đáp án** — đáp án đúng, số đội chọn từng ô và một câu giải thích được hiện ra, điểm được cộng cho từng đội.
+7. BTC bấm **Câu tiếp theo** (hoặc **Phím cách**; một nút duy nhất đổi nghĩa theo pha). Sau câu cuối lượt kết thúc và ra bảng xếp hạng đội chung cuộc.
 
-**Chấm điểm** — mỗi câu đúng được `600 + 400 × (thời gian còn lại / 15s)`: chọn ngay giây đầu được **1000**, chọn giây cuối vẫn được **600**; sai hoặc bỏ trống **0**. Điểm giảm dần liên tục theo thời gian đã dùng, và điện thoại hiện luôn "chốt ngay bây giờ: +N điểm" để người chơi thấy thời gian là tiền. Chọn là **chốt**, không đổi được. Công thức nằm ở `quizPoints` trong `@clubday/contract`, dùng chung cho server chấm và client hiển thị.
+**Luật đội — vì sao các thành viên phải nói chuyện với nhau**
 
-**2 quyền trợ giúp** — mỗi người **mỗi quyền một lần** trong cả lượt, phải dùng *trước* khi chốt đáp án:
+- **Đội trưởng xoay vòng.** Mỗi câu một thành viên làm đội trưởng (câu 1 người đầu, câu 2 người thứ hai…, hết vòng thì quay lại). Chỉ đội trưởng **chốt đáp án** và **dùng quyền trợ giúp** được; người khác bấm sẽ bị server từ chối (`NOT_CAPTAIN`).
+- **Đội trưởng không đọc được đáp án.** Điện thoại của đội trưởng chỉ có bốn nút **A B C D**, không có chữ.
+- **Người đọc chỉ thấy một phần.** Bốn đáp án được chia cho các thành viên còn lại, mỗi người ≥ 1 ô và ô nào cũng có người đọc (đội 4 người → 3 người đọc chia 2+1+1; đội 3 người → 2+2; đội 2 người → người đọc thấy cả bốn). Cách chia **đổi theo từng câu**, và cố định cho một câu (tải lại trang không đổi phần).
+- **Máy chiếu không lộ gì.** Bốn đáp án không có trong trạng thái công khai trước khi công bố, nên nhìn lên màn hình hay mở DevTools cũng không đọc được hết.
+
+→ Muốn chốt đúng, các thành viên phải **đọc to phần mình thấy, ghép lại, bàn rồi đội trưởng mới bấm**. Đội 1 người (chỉ xảy ra khi phòng quá ít người) thì tự đọc được cả bốn.
+
+**Chấm điểm** — mỗi câu đúng được `600 + 400 × (thời gian còn lại / 15s)`: chọn ngay giây đầu được **1000**, chọn giây cuối vẫn được **600**; sai hoặc bỏ trống **0**. Điểm giảm dần liên tục theo thời gian đã dùng, và điện thoại hiện luôn "chốt ngay bây giờ: +N điểm" để người chơi thấy thời gian là tiền. Chốt là **chốt**, không đổi được. Điểm thuộc về **cả đội**: mọi thành viên cùng điểm và cùng hạng. Công thức nằm ở `quizPoints` trong `@clubday/contract`, dùng chung cho server chấm và client hiển thị.
+
+**2 quyền trợ giúp** — mỗi **đội** **mỗi quyền một lần** trong cả lượt (đội trưởng bấm; đổi đội trưởng cũng không hồi lại), phải dùng *trước* khi chốt đáp án:
 
 | Quyền | Tác dụng | Dùng được khi |
 |---|---|---|
@@ -35,7 +46,7 @@ Khác bốn trò kia: **cả phòng đi cùng nhau từng câu**, và BTC là ng
 
 Luật "x2 từ mức Vừa" nằm ở `QUIZ_DOUBLE_MIN_LEVEL` trong `@clubday/contract` — server từ chối (`LIFELINE_LOCKED`) và client khoá nút theo cùng một hằng số. Muốn x2 mở sớm hơn hay muộn hơn thì đổi số đó (1 = mọi câu, 3 = chỉ câu khó).
 
-**Bảng xếp hạng có hoạt ảnh** — khi công bố đáp án, các hàng **trượt mượt** sang thứ hạng mới, hàng vừa vượt lên **nháy viền xanh**, người mới lọt top **trượt vào**, và điểm **đếm dần** lên số mới. Trên điện thoại bảng bắt đầu từ thứ hạng cũ rồi mới chuyển, để thấy rõ ai vừa lên ai vừa xuống. Người bật "giảm chuyển động" trong hệ điều hành sẽ không thấy hoạt ảnh nào.
+**Bảng xếp hạng ĐỘI có hoạt ảnh** — khi công bố đáp án, các hàng **trượt mượt** sang thứ hạng mới, hàng vừa vượt lên **nháy viền xanh**, người mới lọt top **trượt vào**, và điểm **đếm dần** lên số mới. Trên điện thoại bảng bắt đầu từ thứ hạng cũ rồi mới chuyển, để thấy rõ ai vừa lên ai vừa xuống. Người bật "giảm chuyển động" trong hệ điều hành sẽ không thấy hoạt ảnh nào.
 
 **Câu hỏi — import từ file JSON.** Mặc định là bộ 40 câu có sẵn (`apps/server/src/services/quiz-bank.ts`: công nghệ, lập trình, chuyện vui; xếp dễ → vừa → khó theo 10/15/15). BTC thay bằng đề của mình ngay ở `/admin`, mục **Câu hỏi Ai là triệu phú**:
 
@@ -75,7 +86,7 @@ Cũng nhận trực tiếp một mảng `[ {...}, {...} ]`. Tối đa **100 câu
 
 **Chống gian lận** — điểm và thời gian do server đo (không tin giờ điện thoại); chọn trong <350ms sau khi câu hiện ra bị từ chối và đánh cờ; chỉ BTC (`x-admin-token`) mới công bố / sang câu được.
 
-**Sức chứa** — mặc định 50, tối đa 50, đặt bằng `MAX_PLAYERS_QUIZ`. Trò này **không** theo `MAX_PLAYERS` chung (đó là con số cho các trò ở booth).
+**Số người mỗi đội & sức chứa** — số người mỗi đội do BTC đặt (`QUIZ_TEAM_SIZE`, 2–10). Sức chứa tổng mặc định 50, tối đa 50, đặt bằng `MAX_PLAYERS_QUIZ`. Trò này **không** theo `MAX_PLAYERS` chung (đó là con số cho các trò ở booth).
 ---
 
 ## Giao diện
