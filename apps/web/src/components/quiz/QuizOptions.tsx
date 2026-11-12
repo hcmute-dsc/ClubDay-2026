@@ -103,7 +103,7 @@ export function QuizOptions({
             {revealed && distribution && (
               <span className={`shrink-0 font-display font-black tabular-nums ${xl ? 'text-2xl' : 'text-sm'}`}>
                 {distribution[i] ?? 0}
-                <span className="font-sans text-xs font-bold opacity-70"> người</span>
+                <span className="font-sans text-xs font-bold opacity-70"> đội</span>
               </span>
             )}
           </>
@@ -111,7 +111,7 @@ export function QuizOptions({
 
         const className = `relative flex items-center gap-3 border-[3px] border-line text-ink transition-opacity ${
           lettersOnly ? 'min-h-24 justify-center' : ''
-        } ${xl ? 'min-h-28 px-5 py-4' : 'min-h-16 px-3 py-3'} ${dim ? 'opacity-40' : ''} ${isPicked && !revealed ? 'ring-4 ring-fg ring-offset-4 ring-offset-ink' : ''}`;
+        } ${xl ? 'min-h-20 px-5 py-3' : 'min-h-16 px-3 py-3'} ${dim ? 'opacity-40' : ''} ${isPicked && !revealed ? 'ring-4 ring-fg ring-offset-4 ring-offset-ink' : ''}`;
         const style = { background };
 
         if (!onPick) {

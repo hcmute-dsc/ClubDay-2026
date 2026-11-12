@@ -250,7 +250,7 @@ export function QuizHost() {
 
       {/* ───────── đang thi ───────── */}
       {state.status === 'playing' && quiz && (
-        <section className="grid gap-6 xl:grid-cols-[1fr_30rem]">
+        <section className="grid gap-6 pb-28 xl:grid-cols-[1fr_30rem]">
           <div className="space-y-5">
             <div className="flex flex-wrap items-center justify-between gap-4">
               <div className="flex flex-wrap items-center gap-3">
@@ -280,8 +280,8 @@ export function QuizHost() {
               )}
             </div>
 
-            <div key={quiz.index} className="card animate-pop px-8 py-10">
-              <p className="break-words font-display text-3xl font-black leading-snug lg:text-5xl">{quiz.text}</p>
+            <div key={quiz.index} className={`card animate-pop px-8 ${revealed ? 'py-6' : 'py-10'}`}>
+              <p className={`break-words font-display font-black leading-snug ${revealed ? 'text-3xl lg:text-4xl' : 'text-3xl lg:text-5xl'}`}>{quiz.text}</p>
             </div>
 
             {revealed && quiz.options ? (
