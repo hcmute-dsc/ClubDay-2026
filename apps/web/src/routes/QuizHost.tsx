@@ -291,6 +291,7 @@ export function QuizHost() {
                 correct={quiz.correct}
                 distribution={quiz.distribution}
                 size="xl"
+                hideLetters
               />
             ) : (
               // Không chiếu đáp án: đây là chỗ để nhắc cả hội trường rằng phải NÓI CHUYỆN.

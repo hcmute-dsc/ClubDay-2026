@@ -229,6 +229,32 @@ export function optionSlices(round: Round, team: QuizTeam, index: number): Map<s
   return out;
 }
 
+/**
+ * Thứ tự bốn ô mà MỖI ĐỘI nhìn thấy ở câu `index`: `view[vị trí trên máy] = ô thật`.
+ *
+ * Mỗi đội một thứ tự khác nhau (seed theo lượt + đội + câu), nên đội bên cạnh la "B!" cũng
+ * không dùng được: chữ B của họ là ô khác với chữ B của mình, chỉ có NỘI DUNG đáp án mới
+ * đúng cho mọi đội. Server lưu mọi thứ theo ô THẬT (đáp án đã chốt, ô bị 50:50, phân bố);
+ * phép đổi chỉ xảy ra ở biên — lúc gửi cho người chơi (`quizMe`, `applyLifeline`) và lúc
+ * nhận đáp án (`submitQuizAnswer`) — để chấm điểm không phụ thuộc vào đội nào đang nhìn.
+ * Cố định cho một câu: tải lại trang không đổi chỗ các ô.
+ */
+export function teamView(round: Round, team: QuizTeam, index: number): number[] {
+  const all = Array.from({ length: QUIZ_OPTION_COUNT }, (_, i) => i);
+  return shuffle(all, mulberry32(seedFromRoundId(`${round.id}:${team.id}:${index}:view`)));
+}
+
+/** Ô thật → vị trí đội này thấy. */
+const toView = (view: number[], real: number): number => view.indexOf(real);
+
+/** Gợi ý của đội, đổi sang vị trí trên máy của đội. */
+function viewHints(team: QuizTeam, view: number[]): QuizHints {
+  const out: QuizHints = {};
+  if (team.hints.hidden) out.hidden = team.hints.hidden.map((r) => toView(view, r)).sort((a, b) => a - b);
+  if (team.hints.doubled) out.doubled = true;
+  return out;
+}
+
 // ───────────────────────── nhìn từ bên ngoài ─────────────────────────
 
 /**
@@ -305,6 +331,7 @@ export function quizMe(round: Round, player: Player): QuizMe | null {
   if (!team || !q) return null;
 
   const index = round.quiz.index;
+  const view = teamView(round, team, index);
   const captainId = captainOf(team, index);
   const solo = team.memberIds.length === 1;
   const role = captainId === player.id ? 'captain' : 'reader';
@@ -314,7 +341,10 @@ export function quizMe(round: Round, player: Player): QuizMe | null {
   if (round.quiz.phase === 'question') {
     const mine = optionSlices(round, team, index).get(player.id) ?? [];
     const hidden = team.hints.hidden ?? [];
-    visible = mine.filter((i) => !hidden.includes(i)).map((i) => ({ index: i, text: q.options[i] as string }));
+    visible = mine
+      .filter((i) => !hidden.includes(i))
+      .map((i) => ({ index: toView(view, i), text: q.options[i] as string }))
+      .sort((a, b) => a.index - b.index);
     // Đội trưởng của đội >1 người không đọc được chữ nào: ô của họ chỉ có A–D.
     if (role === 'captain' && !solo) visible = [];
   }
@@ -329,9 +359,19 @@ export function quizMe(round: Round, player: Player): QuizMe | null {
     captainId,
     captainName: round.players.get(captainId)?.name ?? '?',
     visible,
-    answer: team.answer,
+    answer: team.answer === null ? null : toView(view, team.answer),
     used: team.used,
-    hints: team.hints,
+    hints: viewHints(team, view),
+    // Sau công bố: chính bốn ô đó nhưng theo thứ tự ĐỘI này đã thấy, để chữ cái khớp với điện thoại.
+    ...(round.quiz.phase === 'reveal'
+      ? {
+          reveal: {
+            options: view.map((r) => q.options[r] as string),
+            correct: toView(view, q.answer),
+            distribution: view.map((r) => round.quiz.distribution[r] ?? 0),
+          },
+        }
+      : {}),
     score: team.score,
     streak: team.streak,
     correct: team.correct,
@@ -384,7 +424,9 @@ export function submitQuizAnswer(
   if (!Number.isInteger(choice) || choice < 0 || choice >= QUIZ_OPTION_COUNT) {
     return { ok: false, code: 'BAD_CHOICE' };
   }
-  if (team.hints.hidden?.includes(choice)) return { ok: false, code: 'HIDDEN_OPTION' };
+  // `choice` là vị trí trên máy của đội; từ đây trở đi chỉ dùng ô thật.
+  const real = teamView(round, team, index)[choice] as number;
+  if (team.hints.hidden?.includes(real)) return { ok: false, code: 'HIDDEN_OPTION' };
   if (team.answer !== null) return { ok: false, code: 'ALREADY_ANSWERED' };
 
   if (now - round.quiz.startedAt < MIN_QUIZ_REACTION_MS) {
@@ -392,7 +434,7 @@ export function submitQuizAnswer(
     return { ok: false, code: 'TOO_FAST' };
   }
 
-  team.answer = choice;
+  team.answer = real;
   team.answeredAt = now;
 
   // Đội nào cũng đã chốt thì công bố luôn, khỏi bắt cả phòng ngồi chờ hết giờ.
@@ -471,7 +513,7 @@ export function applyLifeline(
 
   team.used[kind] = index;
   touch(round); // cả đội (và màn chiếu) thấy thay đổi ngay
-  return { ok: true, kind, hints: team.hints };
+  return { ok: true, kind, hints: viewHints(team, teamView(round, team, index)) };
 }
 
 export function isLifeline(value: string): value is LifelineKind {

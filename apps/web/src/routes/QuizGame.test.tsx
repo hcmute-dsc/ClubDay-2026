@@ -345,6 +345,13 @@ describe('QuizGame — quyền trợ giúp (đội trưởng)', () => {
 });
 
 describe('QuizGame — BTC đã công bố', () => {
+  /** Thứ tự ô của ĐỘI mình: xoay một nấc so với màn chiếu (OPTIONS[0] đúng → ở đây nằm ô D). */
+  const TEAM_REVEAL = {
+    options: [OPTIONS[1]!, OPTIONS[2]!, OPTIONS[3]!, OPTIONS[0]!],
+    correct: 3,
+    distribution: [1, 0, 0, 1],
+  };
+
   const revealed = (over: Partial<QuizPublic> = {}) =>
     quizOf({
       phase: 'reveal',
@@ -356,7 +363,7 @@ describe('QuizGame — BTC đã công bố', () => {
     });
 
   it('đội chọn đúng → báo chính xác, hiện điểm CỦA ĐỘI, đáp án đủ chữ và lời giải', async () => {
-    meMock.mockResolvedValue(meOf({ phase: 'reveal', answer: 0, score: 870, delta: 870 }));
+    meMock.mockResolvedValue(meOf({ phase: 'reveal', answer: 3, score: 870, delta: 870, reveal: TEAM_REVEAL }));
     renderCaptain(revealed());
     expect(await screen.findByText('Cả đội chính xác!')).toBeTruthy();
     // Điểm cộng hiện ở thẻ kết quả VÀ ở dòng đội mình trên bảng hạng.
@@ -366,23 +373,25 @@ describe('QuizGame — BTC đã công bố', () => {
     // Sang pha công bố, bốn đáp án hiện đủ chữ cho mọi người.
     expect(screen.getByText('Hà Nội')).toBeTruthy();
     expect(screen.getByText('Cần Thơ')).toBeTruthy();
+    // Chữ cái theo máy của ĐỘI (D), không phải chữ trên màn chiếu (A).
+    expect(screen.getByText(/Đáp án đúng:/).textContent).toContain('D');
   });
 
   it('đội chọn sai → báo sai và đánh dấu ô đội chọn', async () => {
-    meMock.mockResolvedValue(meOf({ phase: 'reveal', answer: 1 }));
+    meMock.mockResolvedValue(meOf({ phase: 'reveal', answer: 1, reveal: TEAM_REVEAL }));
     renderCaptain(revealed(), teamsOf('me', { delta: 0 }));
     expect(await screen.findByText('Tiếc quá, đội trả lời sai')).toBeTruthy();
     expect(screen.getByLabelText('Bạn chọn sai')).toBeTruthy();
   });
 
   it('đội không kịp chốt → nói thẳng là chưa kịp chốt', async () => {
-    meMock.mockResolvedValue(meOf({ phase: 'reveal', answer: null }));
+    meMock.mockResolvedValue(meOf({ phase: 'reveal', answer: null, reveal: TEAM_REVEAL }));
     renderReader(revealed(), teamsOf('p2', { delta: 0 }));
     expect(await screen.findByText('Đội chưa kịp chốt')).toBeTruthy();
   });
 
   it('người đọc cũng thấy kết quả đội và bảng xếp hạng ĐỘI', async () => {
-    meMock.mockResolvedValue(meOf({ phase: 'reveal', role: 'reader', captainId: 'p2', answer: 0 }));
+    meMock.mockResolvedValue(meOf({ phase: 'reveal', role: 'reader', captainId: 'p2', answer: 3, reveal: TEAM_REVEAL }));
     renderReader(revealed());
     expect(await screen.findByRole('list', { name: 'Bảng xếp hạng trực tiếp' })).toBeTruthy();
     expect(screen.getByText('Đội Xanh')).toBeTruthy();

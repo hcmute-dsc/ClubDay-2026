@@ -22,6 +22,11 @@ export interface QuizOptionsProps {
   disabled?: boolean;
   /** `xl` cho màn hình chiếu. */
   size?: 'md' | 'xl';
+  /**
+   * Bỏ chữ cái A–D, chỉ còn nội dung. Dùng ở màn chiếu: mỗi đội thấy các ô theo một thứ tự
+   * riêng nên "B" trên màn chiếu không phải "B" trên điện thoại của đội nào cả.
+   */
+  hideLetters?: boolean;
 }
 
 /**
@@ -36,9 +41,9 @@ const TONES = [
 ] as const;
 
 /**
- * Bốn ô đáp án A/B/C/D — dùng cho cả điện thoại (bấm được) lẫn màn hình chiếu
- * (chỉ xem), nên người chơi nhìn lên màn hình và nhìn xuống điện thoại thấy
- * cùng một bộ màu và chữ cái.
+ * Bốn ô đáp án A/B/C/D — dùng cho cả điện thoại (bấm được) lẫn màn hình chiếu (chỉ xem).
+ * Mỗi đội thấy các ô theo thứ tự RIÊNG nên chữ cái chỉ có nghĩa trên điện thoại của đội đó;
+ * màn chiếu vì thế bỏ chữ (`hideLetters`) và để nội dung đáp án làm mốc chung.
  *
  * Màu đặt bằng INLINE STYLE vì `.btn:disabled` đổi nền về xám và thắng mọi class
  * tiện ích: ô vừa bấm cũng `disabled` trong lúc chờ, mà đó lại là ô cần sáng nhất.
@@ -53,6 +58,7 @@ export function QuizOptions({
   onPick,
   disabled = false,
   size = 'md',
+  hideLetters = false,
 }: QuizOptionsProps) {
   const revealed = correct !== undefined;
   const xl = size === 'xl';
@@ -81,14 +87,16 @@ export function QuizOptions({
 
         const body = (
           <>
-            <span
-              aria-hidden="true"
-              className={`grid shrink-0 place-items-center border-[3px] border-ink bg-ink font-display font-black text-white ${
-                xl ? 'h-14 w-14 text-3xl' : 'h-10 w-10 text-xl'
-              }`}
-            >
-              {QUIZ_OPTION_LETTERS[i]}
-            </span>
+            {!hideLetters && (
+              <span
+                aria-hidden="true"
+                className={`grid shrink-0 place-items-center border-[3px] border-ink bg-ink font-display font-black text-white ${
+                  xl ? 'h-14 w-14 text-3xl' : 'h-10 w-10 text-xl'
+                }`}
+              >
+                {QUIZ_OPTION_LETTERS[i]}
+              </span>
+            )}
             <span
               className={`min-w-0 flex-1 text-left font-bold leading-snug ${
                 xl ? 'text-2xl lg:text-3xl' : 'text-base sm:text-lg'

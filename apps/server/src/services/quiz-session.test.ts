@@ -26,6 +26,7 @@ import {
   startQuiz,
   submitQuizAnswer,
   teamOf as teamOfRound,
+  teamView,
   tickQuiz,
 } from './quiz-session.js';
 import { QUIZ_BANK } from './quiz-bank.js';
@@ -54,6 +55,17 @@ function setup(players = 3): { round: Round; ps: Player[] } {
 /** Đội (1 người) của người chơi `p` — nơi giờ đây giữ đáp án, chuỗi và quyền trợ giúp. */
 function teamOf(round: Round, p: Player): QuizTeam {
   return teamOfRound(round, p.id)!;
+}
+
+/**
+ * Chốt đáp án theo ô THẬT của câu (không phải vị trí trên máy của đội): đổi sang vị trí đội
+ * đó thấy rồi mới gọi API, đúng như điện thoại đội trưởng làm. Nhờ vậy các ca chấm điểm bên
+ * dưới đọc như cũ, còn việc "mỗi đội một thứ tự" được canh riêng ở mục THỨ TỰ Ô RIÊNG TỪNG ĐỘI.
+ */
+function submitReal(round: Round, player: Player, index: number, real: number, now: number) {
+  const team = teamOfRound(round, player.id);
+  const choice = team ? teamView(round, team, index).indexOf(real) : real;
+  return submitQuizAnswer(round, player, index, choice, now);
 }
 
 const correctOf = (round: Round): number => currentQuizQuestion(round)!.answer;
@@ -115,8 +127,8 @@ describe('điểm giảm dần theo thời gian chọn', () => {
   it('cùng đúng thì người chọn nhanh hơn được nhiều điểm hơn và xếp trên', () => {
     const { round, ps } = setup(2);
     const [fast, slow] = ps as [Player, Player];
-    submitQuizAnswer(round, fast, 0, correctOf(round), T0 + 2_000);
-    submitQuizAnswer(round, slow, 0, correctOf(round), T0 + 20_000);
+    submitReal(round, fast, 0, correctOf(round), T0 + 2_000);
+    submitReal(round, slow, 0, correctOf(round), T0 + 20_000);
     revealQuestion(round, T0 + 21_000);
     expect(fast.score).toBeGreaterThan(slow.score);
     expect(teamOf(round, fast).lastDelta).toBe(fast.score);
@@ -130,7 +142,7 @@ describe('trả lời', () => {
   it('đúng được cộng điểm lúc công bố, KHÔNG cộng ngay lúc chọn', () => {
     const { round, ps } = setup();
     const p = ps[0]!;
-    expect(submitQuizAnswer(round, p, 0, correctOf(round), T0 + 3_000)).toMatchObject({ ok: true });
+    expect(submitReal(round, p, 0, correctOf(round), T0 + 3_000)).toMatchObject({ ok: true });
     expect(p.score).toBe(0);
     revealQuestion(round, T0 + 4_000);
     expect(p.score).toBe(pointsFor(T0 + 3_000, T0, T0 + QUIZ_QUESTION_MS));
@@ -141,7 +153,7 @@ describe('trả lời', () => {
   it('sai hoặc bỏ trống → 0 điểm, chuỗi về 0', () => {
     const { round, ps } = setup();
     const [wrong, silent] = ps as [Player, Player];
-    submitQuizAnswer(round, wrong, 0, wrongOf(round), T0 + 3_000);
+    submitReal(round, wrong, 0, wrongOf(round), T0 + 3_000);
     revealQuestion(round, T0 + 31_000);
     expect(wrong.score).toBe(0);
     expect(silent.score).toBe(0);
@@ -152,8 +164,8 @@ describe('trả lời', () => {
   it('chốt là chốt: chọn lần hai bị từ chối', () => {
     const { round, ps } = setup();
     const p = ps[0]!;
-    submitQuizAnswer(round, p, 0, wrongOf(round), T0 + 3_000);
-    expect(submitQuizAnswer(round, p, 0, correctOf(round), T0 + 4_000)).toEqual({
+    submitReal(round, p, 0, wrongOf(round), T0 + 3_000);
+    expect(submitReal(round, p, 0, correctOf(round), T0 + 4_000)).toEqual({
       ok: false,
       code: 'ALREADY_ANSWERED',
     });
@@ -163,7 +175,7 @@ describe('trả lời', () => {
   it('chọn quá nhanh bị từ chối và đánh cờ', () => {
     const { round, ps } = setup();
     const p = ps[0]!;
-    expect(submitQuizAnswer(round, p, 0, 1, T0 + MIN_QUIZ_REACTION_MS - 1)).toEqual({
+    expect(submitReal(round, p, 0, 1, T0 + MIN_QUIZ_REACTION_MS - 1)).toEqual({
       ok: false,
       code: 'TOO_FAST',
     });
@@ -173,15 +185,15 @@ describe('trả lời', () => {
 
   it('sai số câu → BAD_INDEX; ô ngoài A–D → BAD_CHOICE', () => {
     const { round, ps } = setup();
-    expect(submitQuizAnswer(round, ps[0]!, 1, 0, T0 + 3_000)).toMatchObject({ code: 'BAD_INDEX' });
-    expect(submitQuizAnswer(round, ps[0]!, 0, 4, T0 + 3_000)).toMatchObject({ code: 'BAD_CHOICE' });
+    expect(submitReal(round, ps[0]!, 1, 0, T0 + 3_000)).toMatchObject({ code: 'BAD_INDEX' });
+    expect(submitReal(round, ps[0]!, 0, 4, T0 + 3_000)).toMatchObject({ code: 'BAD_CHOICE' });
   });
 
   it('quá hạn (kể cả dung sai) → QUESTION_CLOSED; trong dung sai vẫn nhận', () => {
     const { round, ps } = setup();
     const end = T0 + QUIZ_QUESTION_MS;
-    expect(submitQuizAnswer(round, ps[0]!, 0, 0, end + QUIZ_GRACE_MS)).toMatchObject({ ok: true });
-    expect(submitQuizAnswer(round, ps[1]!, 0, 0, end + QUIZ_GRACE_MS + 1)).toMatchObject({
+    expect(submitReal(round, ps[0]!, 0, 0, end + QUIZ_GRACE_MS)).toMatchObject({ ok: true });
+    expect(submitReal(round, ps[1]!, 0, 0, end + QUIZ_GRACE_MS + 1)).toMatchObject({
       code: 'QUESTION_CLOSED',
     });
   });
@@ -189,12 +201,12 @@ describe('trả lời', () => {
   it('đã công bố rồi thì không chọn được nữa', () => {
     const { round, ps } = setup();
     revealQuestion(round, T0 + 5_000);
-    expect(submitQuizAnswer(round, ps[0]!, 0, 0, T0 + 6_000)).toMatchObject({ code: 'QUESTION_CLOSED' });
+    expect(submitReal(round, ps[0]!, 0, 0, T0 + 6_000)).toMatchObject({ code: 'QUESTION_CLOSED' });
   });
 
   it('công bố hai lần không cộng điểm hai lần', () => {
     const { round, ps } = setup();
-    submitQuizAnswer(round, ps[0]!, 0, correctOf(round), T0 + 3_000);
+    submitReal(round, ps[0]!, 0, correctOf(round), T0 + 3_000);
     expect(revealQuestion(round, T0 + 4_000)).toBe(true);
     const score = ps[0]!.score;
     expect(revealQuestion(round, T0 + 5_000)).toBe(false);
@@ -215,16 +227,16 @@ describe('chuyển pha', () => {
 
   it('cả phòng đã chọn xong thì công bố sớm', () => {
     const { round, ps } = setup(2);
-    submitQuizAnswer(round, ps[0]!, 0, 0, T0 + 1_000);
+    submitReal(round, ps[0]!, 0, 0, T0 + 1_000);
     expect(round.quiz.phase).toBe('question');
-    submitQuizAnswer(round, ps[1]!, 0, 1, T0 + 2_000);
+    submitReal(round, ps[1]!, 0, 1, T0 + 2_000);
     expect(round.quiz.phase).toBe('reveal');
   });
 
   it('chỉ sang câu kế được khi đã công bố; câu mới xoá lựa chọn cũ', () => {
     const { round, ps } = setup();
     expect(nextQuestion(round, T0 + 1_000)).toBe('invalid');
-    submitQuizAnswer(round, ps[0]!, 0, 0, T0 + 2_000);
+    submitReal(round, ps[0]!, 0, 0, T0 + 2_000);
     revealQuestion(round, T0 + 3_000);
     expect(nextQuestion(round, T0 + 9_000)).toBe('next');
     expect(round.quiz.index).toBe(1);
@@ -262,7 +274,7 @@ describe('không lộ đáp án', () => {
 
   it('sang pha reveal mới có đáp án và phân bố lựa chọn', () => {
     const { round, ps } = setup(2);
-    submitQuizAnswer(round, ps[0]!, 0, 2, T0 + 1_000);
+    submitReal(round, ps[0]!, 0, 2, T0 + 1_000);
     revealQuestion(round, T0 + 2_000);
     const quiz = publicQuiz(round)!;
     expect(quiz.correct).toBe(correctOf(round));
@@ -271,7 +283,7 @@ describe('không lộ đáp án', () => {
 
   it('bảng hạng trong state đã xếp sẵn, kèm điểm vừa nhận', () => {
     const { round, ps } = setup(2);
-    submitQuizAnswer(round, ps[1]!, 0, correctOf(round), T0 + 1_000);
+    submitReal(round, ps[1]!, 0, correctOf(round), T0 + 1_000);
     revealQuestion(round, T0 + 2_000);
     const players = toRoundState(round, T0).players;
     expect(players[0]).toMatchObject({ id: ps[1]!.id, rank: 1, delta: ps[1]!.score });
@@ -321,7 +333,9 @@ describe('quyền trợ giúp', () => {
     if (!res.ok) throw new Error('phải ok');
     const hidden = res.hints.hidden!;
     expect(hidden).toHaveLength(2);
-    expect(hidden).not.toContain(correctOf(round));
+    // `hidden` là vị trí trên máy của đội → so với vị trí của đáp án đúng trên máy đó
+    const view = teamView(round, teamOf(round, ps[0]!), 0);
+    expect(hidden).not.toContain(view.indexOf(correctOf(round)));
   });
 
   it('chọn ô đã bị 50:50 loại thì bị từ chối', () => {
@@ -400,8 +414,8 @@ describe('quyền trợ giúp', () => {
       goTo(round, FIRST_MEDIUM);
       const at = round.quiz.startedAt;
       expect(applyLifeline(round, dbl, 'double', FIRST_MEDIUM, at + 500)).toMatchObject({ ok: true });
-      submitQuizAnswer(round, dbl, FIRST_MEDIUM, correctOf(round), at + 3_000);
-      submitQuizAnswer(round, plain, FIRST_MEDIUM, correctOf(round), at + 3_000);
+      submitReal(round, dbl, FIRST_MEDIUM, correctOf(round), at + 3_000);
+      submitReal(round, plain, FIRST_MEDIUM, correctOf(round), at + 3_000);
       expect(round.quiz.phase).toBe('reveal'); // cả hai đã chọn → công bố sớm
       expect(dbl.score).toBeGreaterThan(0);
       expect(dbl.score).toBe(plain.score * 2);
@@ -415,7 +429,7 @@ describe('quyền trợ giúp', () => {
       const at = round.quiz.startedAt;
       applyLifeline(round, dbl, 'double', FIRST_MEDIUM, at + 500);
       const before = dbl.score;
-      submitQuizAnswer(round, dbl, FIRST_MEDIUM, wrongOf(round), at + 3_000);
+      submitReal(round, dbl, FIRST_MEDIUM, wrongOf(round), at + 3_000);
       revealQuestion(round, at + 4_000);
       expect(dbl.score).toBe(before);
       expect(teamOf(round, dbl).used.double).toBe(FIRST_MEDIUM);
@@ -424,7 +438,7 @@ describe('quyền trợ giúp', () => {
 
   it('không dùng được sau khi đã chốt đáp án, hay sau khi công bố', () => {
     const { round, ps } = setup();
-    submitQuizAnswer(round, ps[0]!, 0, 0, T0 + 1_000);
+    submitReal(round, ps[0]!, 0, 0, T0 + 1_000);
     expect(applyLifeline(round, ps[0]!, 'fifty', 0, T0 + 2_000)).toMatchObject({ code: 'ALREADY_ANSWERED' });
     revealQuestion(round, T0 + 3_000);
     expect(applyLifeline(round, ps[1]!, 'fifty', 0, T0 + 4_000)).toMatchObject({ code: 'QUESTION_CLOSED' });
@@ -525,7 +539,7 @@ describe('chỉ đội trưởng chốt được', () => {
     const { round } = setupTeams(3, 3);
     const team = round.quiz.teams[0]!;
     const reader = readerPlayer(round, team);
-    expect(submitQuizAnswer(round, reader, 0, 1, T0 + 3_000)).toEqual({ ok: false, code: 'NOT_CAPTAIN' });
+    expect(submitReal(round, reader, 0, 1, T0 + 3_000)).toEqual({ ok: false, code: 'NOT_CAPTAIN' });
     expect(team.answer).toBeNull();
   });
 
@@ -533,10 +547,10 @@ describe('chỉ đội trưởng chốt được', () => {
     const { round } = setupTeams(6, 3); // 2 đội: đội kia chưa chốt nên câu còn mở
     const team = round.quiz.teams[0]!;
     const cap = captainPlayer(round, team);
-    expect(submitQuizAnswer(round, cap, 0, 2, T0 + 3_000)).toMatchObject({ ok: true });
+    expect(submitReal(round, cap, 0, 2, T0 + 3_000)).toMatchObject({ ok: true });
     expect(team.answer).toBe(2);
-    expect(submitQuizAnswer(round, cap, 0, 1, T0 + 4_000)).toMatchObject({ code: 'ALREADY_ANSWERED' });
-    expect(submitQuizAnswer(round, readerPlayer(round, team), 0, 1, T0 + 4_000)).toMatchObject({
+    expect(submitReal(round, cap, 0, 1, T0 + 4_000)).toMatchObject({ code: 'ALREADY_ANSWERED' });
+    expect(submitReal(round, readerPlayer(round, team), 0, 1, T0 + 4_000)).toMatchObject({
       code: 'NOT_CAPTAIN',
     });
   });
@@ -544,17 +558,17 @@ describe('chỉ đội trưởng chốt được', () => {
   it('chỉ công bố sớm khi MỌI ĐỘI đã chốt, không phải mọi người', () => {
     const { round } = setupTeams(6, 3); // 2 đội
     const [a, b] = round.quiz.teams as [QuizTeam, QuizTeam];
-    submitQuizAnswer(round, captainPlayer(round, a), 0, 0, T0 + 1_000);
+    submitReal(round, captainPlayer(round, a), 0, 0, T0 + 1_000);
     expect(round.quiz.phase).toBe('question');
-    submitQuizAnswer(round, captainPlayer(round, b), 0, 0, T0 + 2_000);
+    submitReal(round, captainPlayer(round, b), 0, 0, T0 + 2_000);
     expect(round.quiz.phase).toBe('reveal');
   });
 
   it('đội đúng được cộng điểm MỘT lần dù có nhiều thành viên; ai trong đội cũng cùng điểm', () => {
     const { round } = setupTeams(6, 3);
     const [a, b] = round.quiz.teams as [QuizTeam, QuizTeam];
-    submitQuizAnswer(round, captainPlayer(round, a), 0, correctOf(round), T0 + 3_000);
-    submitQuizAnswer(round, captainPlayer(round, b), 0, wrongOf(round), T0 + 3_000);
+    submitReal(round, captainPlayer(round, a), 0, correctOf(round), T0 + 3_000);
+    submitReal(round, captainPlayer(round, b), 0, wrongOf(round), T0 + 3_000);
 
     const expected = pointsFor(T0 + 3_000, T0, T0 + QUIZ_QUESTION_MS);
     expect(a.score).toBe(expected);
@@ -566,15 +580,15 @@ describe('chỉ đội trưởng chốt được', () => {
   it('phân bố tính theo ĐỘI, không theo người', () => {
     const { round } = setupTeams(6, 3);
     const [a, b] = round.quiz.teams as [QuizTeam, QuizTeam];
-    submitQuizAnswer(round, captainPlayer(round, a), 0, 1, T0 + 3_000);
-    submitQuizAnswer(round, captainPlayer(round, b), 0, 1, T0 + 3_000);
+    submitReal(round, captainPlayer(round, a), 0, 1, T0 + 3_000);
+    submitReal(round, captainPlayer(round, b), 0, 1, T0 + 3_000);
     expect(publicQuiz(round)!.distribution).toEqual([0, 2, 0, 0]);
   });
 
   it('người ngoài đội (không thuộc đội nào) bị từ chối', () => {
     const { round } = setupTeams(3, 3);
     const stranger = addPlayer(round, 'Lạ', T0 + 1);
-    expect(submitQuizAnswer(round, stranger, 0, 0, T0 + 3_000)).toMatchObject({ code: 'NOT_PLAYING' });
+    expect(submitReal(round, stranger, 0, 0, T0 + 3_000)).toMatchObject({ code: 'NOT_PLAYING' });
   });
 });
 
@@ -643,7 +657,8 @@ describe('chia đáp án cho người đọc', () => {
     const team = round.quiz.teams[0]!;
     const reader = readerPlayer(round, team);
     const q = currentQuizQuestion(round)!;
-    for (const v of quizMe(round, reader)!.visible) expect(v.text).toBe(q.options[v.index]);
+    const view = teamView(round, team, 0);
+    for (const v of quizMe(round, reader)!.visible) expect(v.text).toBe(q.options[view[v.index]!]);
   });
 
   it('50:50 gạch ô nào thì ô đó biến khỏi phần của người đọc', () => {
@@ -698,8 +713,8 @@ describe('không lộ đáp án ra màn hình chiếu', () => {
   it('bảng hạng: các đội đã xếp, mọi thành viên mang hạng và điểm của đội', () => {
     const { round } = setupTeams(6, 3);
     const [a, b] = round.quiz.teams as [QuizTeam, QuizTeam];
-    submitQuizAnswer(round, captainPlayer(round, b), 0, correctOf(round), T0 + 1_000);
-    submitQuizAnswer(round, captainPlayer(round, a), 0, wrongOf(round), T0 + 1_000);
+    submitReal(round, captainPlayer(round, b), 0, correctOf(round), T0 + 1_000);
+    submitReal(round, captainPlayer(round, a), 0, wrongOf(round), T0 + 1_000);
 
     const st = toRoundState(round, T0);
     expect(st.teams!.map((t) => t.id)).toEqual([b.id, a.id]);
@@ -757,9 +772,99 @@ describe('quyền trợ giúp là của ĐỘI', () => {
     }
     const at = round.quiz.startedAt;
     expect(applyLifeline(round, captainPlayer(round, a), 'double', FIRST_MEDIUM, at + 500)).toMatchObject({ ok: true });
-    submitQuizAnswer(round, captainPlayer(round, a), FIRST_MEDIUM, correctOf(round), at + 3_000);
-    submitQuizAnswer(round, captainPlayer(round, b), FIRST_MEDIUM, correctOf(round), at + 3_000);
+    submitReal(round, captainPlayer(round, a), FIRST_MEDIUM, correctOf(round), at + 3_000);
+    submitReal(round, captainPlayer(round, b), FIRST_MEDIUM, correctOf(round), at + 3_000);
     expect(a.score).toBeGreaterThan(0);
     expect(a.score).toBe(b.score * 2);
+  });
+});
+
+// ───────────────────────── thứ tự ô riêng từng đội ─────────────────────────
+
+describe('thứ tự ô riêng từng đội', () => {
+  it('mỗi đội thấy đủ bốn ô, chỉ khác thứ tự', () => {
+    const { round } = setupTeams(6, 3);
+    for (const team of round.quiz.teams) {
+      for (let i = 0; i < 6; i++) expect([...teamView(round, team, i)].sort()).toEqual([0, 1, 2, 3]);
+    }
+  });
+
+  it('các đội KHÔNG cùng một thứ tự — đội bên cạnh la chữ cái cũng vô ích', () => {
+    const { round } = setupTeams(12, 3); // 4 đội
+    const orders = round.quiz.teams.map((t) => teamView(round, t, 0).join(''));
+    expect(new Set(orders).size).toBeGreaterThan(1);
+    // qua cả bộ câu, hai đội nào đó phải có ít nhất một câu xếp khác nhau
+    const [a, b] = round.quiz.teams as [QuizTeam, QuizTeam];
+    const differ = Array.from({ length: 20 }, (_, i) => teamView(round, a, i).join('') !== teamView(round, b, i).join(''));
+    expect(differ.some(Boolean)).toBe(true);
+  });
+
+  it('cố định cho một câu (tải lại không đổi chỗ), nhưng đổi theo từng câu', () => {
+    const { round } = setupTeams(3, 3);
+    const team = round.quiz.teams[0]!;
+    expect(teamView(round, team, 2)).toEqual(teamView(round, team, 2));
+    const all = Array.from({ length: 12 }, (_, i) => teamView(round, team, i).join(''));
+    expect(new Set(all).size).toBeGreaterThan(1);
+  });
+
+  it('chốt theo vị trí trên máy: chọn đúng chỗ của đáp án đúng thì được điểm, mọi đội đều thế', () => {
+    const { round } = setupTeams(12, 3);
+    const q = currentQuizQuestion(round)!;
+    for (const team of round.quiz.teams) {
+      const choice = teamView(round, team, 0).indexOf(q.answer);
+      expect(submitQuizAnswer(round, captainPlayer(round, team), 0, choice, T0 + 3_000)).toMatchObject({ ok: true });
+      expect(team.answer).toBe(q.answer); // server lưu ô THẬT
+    }
+    revealQuestion(round, T0 + 4_000);
+    for (const team of round.quiz.teams) expect(team.correct).toBe(1);
+  });
+
+  it('chốt cùng MỘT chữ cái thì mỗi đội chọn một ô khác nhau', () => {
+    const { round } = setupTeams(30, 3); // 10 đội: mã lượt ngẫu nhiên nên cần đủ đội để xác suất trùng hết là ~0
+    for (const team of round.quiz.teams) submitQuizAnswer(round, captainPlayer(round, team), 0, 0, T0 + 3_000);
+    const picked = round.quiz.teams.map((t) => t.answer);
+    expect(new Set(picked).size).toBeGreaterThan(1);
+  });
+
+  it('điện thoại của đội: visible/answer/hints đều theo thứ tự của ĐỘI đó, còn text vẫn đúng', () => {
+    const { round } = setupTeams(6, 3);
+    const q = currentQuizQuestion(round)!;
+    for (const team of round.quiz.teams) {
+      const view = teamView(round, team, 0);
+      const cap = captainPlayer(round, team);
+      applyLifeline(round, cap, 'fifty', 0, T0 + 1_000);
+      const seen = team.memberIds.flatMap((id) => quizMe(round, playerOf(round, id))!.visible);
+      for (const v of seen) {
+        expect(v.text).toBe(q.options[view[v.index]!]);
+        expect(team.hints.hidden).not.toContain(view[v.index]);
+      }
+      const choice = view.indexOf(q.answer);
+      submitQuizAnswer(round, cap, 0, choice, T0 + 3_000);
+      expect(quizMe(round, cap)!.answer).toBe(choice); // trả lại đúng vị trí đội đã bấm
+    }
+  });
+
+  it('công bố: me.reveal khớp với thứ tự của đội, màn chiếu vẫn theo thứ tự gốc', () => {
+    const { round } = setupTeams(9, 3); // 3 đội: hai đội chốt, đội thứ ba còn để ngỏ nên chưa tự công bố
+    const q = currentQuizQuestion(round)!;
+    const [a, b] = round.quiz.teams as [QuizTeam, QuizTeam];
+    submitQuizAnswer(round, captainPlayer(round, a), 0, teamView(round, a, 0).indexOf(q.answer), T0 + 3_000);
+    submitQuizAnswer(round, captainPlayer(round, b), 0, teamView(round, b, 0).indexOf((q.answer + 1) % 4), T0 + 3_000);
+    // trước khi công bố: không có reveal
+    expect(quizMe(round, captainPlayer(round, a))!.reveal).toBeUndefined();
+    revealQuestion(round, T0 + 4_000);
+
+    for (const team of [a, b]) {
+      const me = quizMe(round, captainPlayer(round, team))!;
+      expect(me.reveal!.options[me.reveal!.correct]).toBe(q.options[q.answer]);
+      expect([...me.reveal!.options].sort()).toEqual([...q.options].sort());
+      expect(me.reveal!.distribution.reduce((x, y) => x + y, 0)).toBe(2); // 2 đội đã chốt
+    }
+    // phân bố của đội A theo thứ tự của A: ô đúng có 1 đội, và ô đội B chọn cũng có 1
+    const meA = quizMe(round, captainPlayer(round, a))!;
+    expect(meA.reveal!.distribution[meA.reveal!.correct]).toBe(1);
+    // màn chiếu: thứ tự gốc
+    expect(publicQuiz(round)!.options).toEqual(q.options);
+    expect(publicQuiz(round)!.correct).toBe(q.answer);
   });
 });

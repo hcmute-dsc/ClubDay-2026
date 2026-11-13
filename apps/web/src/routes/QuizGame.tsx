@@ -181,7 +181,9 @@ export function QuizGame({ roundId, playerId, state }: GameProps) {
   /** Ô ĐỘI đã chốt: ô mình vừa bấm, hoặc ô server ghi nhận cho đội. */
   const teamPick = picked ?? (fresh ? me.answer : null);
   const locked = teamPick !== null || teamAnswered;
-  const gotItRight = revealed && teamPick !== null && teamPick === quiz.correct;
+  /** Kết quả theo THỨ TỰ Ô CỦA ĐỘI MÌNH — `quiz.correct`/`options` công khai là thứ tự gốc trên màn chiếu. */
+  const rv = revealed && fresh ? me.reveal : undefined;
+  const gotItRight = !!rv && teamPick !== null && teamPick === rv.correct;
   const doubled = !!hints.doubled || (fresh && !!me.hints.doubled);
 
   // Điểm nếu chốt NGAY BÂY GIỜ — giảm dần theo từng giây, để người chơi thấy
@@ -277,12 +279,12 @@ export function QuizGame({ roundId, playerId, state }: GameProps) {
         </>
       )}
 
-      {revealed && quiz.options && (
+      {rv && (
         <QuizOptions
-          options={quiz.options}
+          options={rv.options}
           picked={teamPick}
-          correct={quiz.correct}
-          distribution={quiz.distribution}
+          correct={rv.correct}
+          distribution={rv.distribution}
           disabled
         />
       )}
@@ -293,7 +295,7 @@ export function QuizGame({ roundId, playerId, state }: GameProps) {
         </p>
       )}
 
-      {revealed && (
+      {rv && (
         <section className="space-y-4" aria-label="Kết quả câu hỏi">
           <div
             className={`card flex items-center gap-3 p-4 ${
@@ -310,7 +312,7 @@ export function QuizGame({ roundId, playerId, state }: GameProps) {
                 {gotItRight ? 'Cả đội chính xác!' : teamPick === null ? 'Đội chưa kịp chốt' : 'Tiếc quá, đội trả lời sai'}
               </p>
               <p className="text-sm text-muted">
-                Đáp án đúng: <b className="text-fg">{quiz.correct !== undefined ? QUIZ_OPTION_LETTERS[quiz.correct] : ''}</b>
+                Đáp án đúng: <b className="text-fg">{QUIZ_OPTION_LETTERS[rv.correct]}</b>
                 {team ? ` · Hạng ${team.rank}/${teamCount}` : ''}
               </p>
             </div>

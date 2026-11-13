@@ -31,6 +31,7 @@ Khác bốn trò kia: **cả phòng đi cùng nhau từng câu**, BTC là ngư�
 - **Đội trưởng xoay vòng.** Mỗi câu một thành viên làm đội trưởng (câu 1 người đầu, câu 2 người thứ hai…, hết vòng thì quay lại). Chỉ đội trưởng **chốt đáp án** và **dùng quyền trợ giúp** được; người khác bấm sẽ bị server từ chối (`NOT_CAPTAIN`).
 - **Đội trưởng không đọc được đáp án.** Điện thoại của đội trưởng chỉ có bốn nút **A B C D**, không có chữ.
 - **Người đọc chỉ thấy một phần.** Bốn đáp án được chia cho các thành viên còn lại, mỗi người ≥ 1 ô và ô nào cũng có người đọc (đội 4 người → 3 người đọc chia 2+1+1; đội 3 người → 2+2; đội 2 người → người đọc thấy cả bốn). Cách chia **đổi theo từng câu**, và cố định cho một câu (tải lại trang không đổi phần).
+- **Mỗi đội một thứ tự A–D riêng.** Đội bên cạnh la "B!" cũng vô ích: chữ B của họ là ô khác với chữ B của đội mình, chỉ có **nội dung** đáp án mới đúng cho mọi đội. Thứ tự đổi theo từng câu và cố định trong một câu. Vì vậy màn chiếu, khi công bố, chỉ hiện nội dung đáp án (không có chữ cái); điện thoại mỗi đội hiện kết quả theo chữ cái của chính đội đó.
 - **Máy chiếu không lộ gì.** Bốn đáp án không có trong trạng thái công khai trước khi công bố, nên nhìn lên màn hình hay mở DevTools cũng không đọc được hết.
 
 → Muốn chốt đúng, các thành viên phải **đọc to phần mình thấy, ghép lại, bàn rồi đội trưởng mới bấm**. Đội 1 người (chỉ xảy ra khi phòng quá ít người) thì tự đọc được cả bốn.

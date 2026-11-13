@@ -347,7 +347,13 @@ export interface QuizMe {
    * thấy nút A–D — trừ khi đội chỉ có một người. Đã loại các ô bị 50:50 gạch.
    */
   visible: { index: number; text: string }[];
-  /** Đáp án ĐỘI đã chốt cho câu đang mở, `null` = chưa chốt. */
+  /**
+   * Đáp án ĐỘI đã chốt cho câu đang mở, `null` = chưa chốt.
+   *
+   * Mọi chỉ số ô trong `QuizMe` (`visible[].index`, `answer`, `hints.hidden`, `reveal`) là VỊ TRÍ
+   * TRÊN MÁY CỦA ĐỘI này — mỗi đội một thứ tự khác nhau, nên đừng đem so với `QuizPublic.correct`
+   * hay `distribution` (đó là thứ tự gốc, chiếu trên màn hình).
+   */
   answer: number | null;
   /** Quyền trợ giúp của ĐỘI đã dùng → ở câu số mấy. */
   used: Partial<Record<LifelineKind, number>>;
@@ -359,6 +365,8 @@ export interface QuizMe {
   wrong: number;
   /** Điểm đội nhận ở câu vừa công bố. */
   delta: number;
+  /** Chỉ có ở pha `reveal`: bốn đáp án + đáp án đúng + số đội chọn, theo thứ tự ĐỘI này thấy. */
+  reveal?: { options: string[]; correct: number; distribution: number[] };
 }
 
 /** Một đội trong Ai là triệu phú, như cả phòng nhìn thấy. */
