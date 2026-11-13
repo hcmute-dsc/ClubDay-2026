@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { Eye, Play as PlayIcon, QrCode as QrIcon, SkipForward } from 'lucide-react';
+import { Eye, MonitorPlay, Play as PlayIcon, QrCode as QrIcon, SkipForward } from 'lucide-react';
 import { GAME_THEME } from '../../lib/game-theme';
 import { StatusBadge } from '../Chips';
 import { GAME_LABEL, type RoundStatus, type RoundSummary } from '../../lib/types';
@@ -56,6 +56,12 @@ export function RoundRow({ round: r, busy, onStart, onSkip, onQr }: RoundRowProp
           <button onClick={onQr} aria-label={`Mã QR lượt ${r.roundId}`} className="btn btn-ghost btn-sm">
             <QrIcon aria-hidden="true" className="h-4 w-4" />
           </button>
+        )}
+        {r.game === 'quiz' && r.live && (
+          <Link to={`/admin/quiz/${r.roundId}`} className="btn btn-accent btn-sm">
+            <MonitorPlay aria-hidden="true" className="h-4 w-4" />
+            Điều khiển
+          </Link>
         )}
         <Link to={`/lobby/${r.roundId}`} className="btn btn-ghost btn-sm">
           <Eye aria-hidden="true" className="h-4 w-4" />

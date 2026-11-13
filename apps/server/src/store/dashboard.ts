@@ -1,4 +1,5 @@
 import type { Player, Round } from './types.js';
+import { rankedTeams } from '../services/quiz-session.js';
 import type { DashboardRow } from '@clubday/contract';
 
 export type { DashboardRow } from '@clubday/contract';
@@ -18,6 +19,9 @@ function finishAt(p: Player): number {
  * Xếp theo: điểm cao hơn → xong sớm hơn → vào lượt sớm hơn.
  */
 export function dashboard(round: Round): DashboardRow[] {
+  // Ai là triệu phú xếp hạng theo ĐỘI, không theo người: các thành viên chung một số điểm.
+  if (round.game === 'quiz' && round.quiz.teams.length > 0) return quizDashboard(round);
+
   const started = round.startedAt ?? round.createdAt;
 
   return [...round.players.values()]
@@ -54,4 +58,24 @@ export function dashboard(round: Round): DashboardRow[] {
         flagged: p.flagged,
       };
     });
+}
+
+/**
+ * Bảng hạng ĐỘI của Ai là triệu phú. Mỗi dòng là một đội: `playerId` mang mã đội, `name`
+ * là tên đội và `members` liệt kê thành viên. Cả phòng đi cùng nhau từng câu nên không có
+ * "thời gian hoàn thành" — `msToFinish` luôn null.
+ */
+function quizDashboard(round: Round): DashboardRow[] {
+  return rankedTeams(round).map((t, i) => ({
+    rank: i + 1,
+    playerId: t.id,
+    name: t.name,
+    score: t.score,
+    correct: t.correct,
+    wrong: t.wrong,
+    msToFinish: null,
+    solved: false,
+    flagged: t.memberIds.some((id) => round.players.get(id)?.flagged === true),
+    members: t.memberIds.map((id) => round.players.get(id)?.name ?? '?'),
+  }));
 }

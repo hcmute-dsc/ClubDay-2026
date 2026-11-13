@@ -46,7 +46,7 @@ const renderAt = (path: string) =>
   );
 
 /** Sức chứa mặc định của cả 4 trò — server trả theo từng trò. */
-const MAXES = { math: 8, draw: 3, memory: 5, spot: 5 } as const;
+const MAXES = { math: 8, draw: 3, memory: 5, spot: 5, quiz: 50 } as const;
 
 /**
  * Tìm phần tử theo TOÀN BỘ text bên trong nó.
@@ -67,7 +67,7 @@ beforeEach(() => {
   openMock.mockReset();
   configMock.mockReset();
   configMock.mockResolvedValue({ signupFormUrl: '', signupNameEntry: '', activeGame: 'draw', maxPlayers: MAXES });
-  openMock.mockResolvedValue({ open: { math: null, draw: null, memory: null, spot: null }, max: MAXES });
+  openMock.mockResolvedValue({ open: { math: null, draw: null, memory: null, spot: null, quiz: null }, max: MAXES });
   joinMock.mockResolvedValue({
     playerId: 'p1',
     roundId: 'ABC123',
@@ -158,7 +158,7 @@ describe('Home — tình hình lượt đang chờ', () => {
   it('hiện số người đang chờ và số còn thiếu, để người mới dồn vào cùng lượt', async () => {
     configMock.mockResolvedValue({ signupFormUrl: '', signupNameEntry: '', activeGame: 'math', maxPlayers: MAXES });
     openMock.mockResolvedValue({
-      open: { math: { roundId: 'ABC123', players: 3 }, draw: null, memory: null, spot: null },
+      open: { math: { roundId: 'ABC123', players: 3 }, draw: null, memory: null, spot: null, quiz: null },
       max: MAXES,
     });
     renderAt('/');
@@ -172,7 +172,7 @@ describe('Home — tình hình lượt đang chờ', () => {
     // BTC hô "lượt CP9ESB"; người chơi phải thấy đúng mã đó trước khi nhập tên.
     configMock.mockResolvedValue({ signupFormUrl: '', signupNameEntry: '', activeGame: 'math', maxPlayers: MAXES });
     openMock.mockResolvedValue({
-      open: { math: { roundId: 'CP9ESB', players: 2 }, draw: null, memory: null, spot: null },
+      open: { math: { roundId: 'CP9ESB', players: 2 }, draw: null, memory: null, spot: null, quiz: null },
       max: MAXES,
     });
     renderAt('/');
@@ -183,7 +183,7 @@ describe('Home — tình hình lượt đang chờ', () => {
   it('lượt vừa tạo chưa ai vào → vẫn hiện mã, và mời thay vì đọc số 0', async () => {
     configMock.mockResolvedValue({ signupFormUrl: '', signupNameEntry: '', activeGame: 'math', maxPlayers: MAXES });
     openMock.mockResolvedValue({
-      open: { math: { roundId: 'NEW123', players: 0 }, draw: null, memory: null, spot: null },
+      open: { math: { roundId: 'NEW123', players: 0 }, draw: null, memory: null, spot: null, quiz: null },
       max: MAXES,
     });
     renderAt('/');
@@ -195,7 +195,7 @@ describe('Home — tình hình lượt đang chờ', () => {
 
   it('trò đang mở mà chưa ai chờ thì nói rõ, không để trống gây đoán', async () => {
     configMock.mockResolvedValue({ signupFormUrl: '', signupNameEntry: '', activeGame: 'draw', maxPlayers: MAXES });
-    openMock.mockResolvedValue({ open: { math: null, draw: null, memory: null, spot: null }, max: MAXES });
+    openMock.mockResolvedValue({ open: { math: null, draw: null, memory: null, spot: null, quiz: null }, max: MAXES });
     renderAt('/');
 
     // ĐÚNG MỘT ô: các trò chưa tới lượt không nói chuyện chờ đợi gì cả.

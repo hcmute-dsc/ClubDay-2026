@@ -4,11 +4,16 @@
  * Cố ý KHÔNG dùng SQLite/ORM: mỗi lượt chỉ 5 người, xem kết quả rồi thôi,
  * không cần truy vấn lịch sử. Xem plan v2 mục 0 để biết lý do.
  */
-import type { GameKind, Player, Round } from './types.js';
-import { MAX_PLAYERS_BY_GAME } from '../config.js';
+import type { GameKind, Player, QuizRoundState, Round } from './types.js';
+import { MAX_PLAYERS_BY_GAME, QUIZ_TEAM_SIZE } from '../config.js';
 import { newPlayerId, newRoundId } from '../lib/id.js';
 
 const rounds = new Map<string, Round>();
+
+/** Trạng thái Ai là triệu phú lúc chưa bắt đầu. Dùng chung với snapshot khi khôi phục. */
+export function emptyQuizRound(): QuizRoundState {
+  return { questions: null, index: 0, phase: 'question', startedAt: 0, endsAt: 0, distribution: [], teams: [], teamSize: 0 };
+}
 
 /**
  * GAME ĐANG MỞ — mỗi thời điểm chỉ MỘT loại game được chơi.
@@ -32,6 +37,20 @@ let activeGame: GameKind | null = 'math';
  * lúc sinh ra (xem `Round.maxPlayers`).
  */
 const maxPlayers: Record<GameKind, number> = { ...MAX_PLAYERS_BY_GAME };
+
+/**
+ * Số người mỗi ĐỘI của Ai là triệu phú — BTC chỉnh ở /admin. Khác sức chứa: con số này
+ * được đọc đúng lúc BTC bấm BẮT ĐẦU, nên đổi nó khi phòng chờ đã có người vẫn có tác dụng.
+ */
+let quizTeamSize = QUIZ_TEAM_SIZE;
+
+export function getQuizTeamSize(): number {
+  return quizTeamSize;
+}
+
+export function setQuizTeamSize(value: number): void {
+  quizTeamSize = value;
+}
 
 /**
  * Trò được mở GẦN ĐÂY NHẤT — vẫn nhớ cả khi đang tạm đóng.
@@ -121,6 +140,7 @@ export function createRound(game: GameKind, now = Date.now()): Round {
     math: { questions: null },
     draw: { target: null },
     memory: { sequence: null },
+    quiz: emptyQuizRound(),
     version: 0,
     live: true,
   };
@@ -258,6 +278,7 @@ export function resetAll(): void {
   activeGame = 'math';
   lastGame = 'math';
   Object.assign(maxPlayers, MAX_PLAYERS_BY_GAME);
+  quizTeamSize = QUIZ_TEAM_SIZE;
 }
 
 /** Dùng khi khôi phục từ snapshot lúc boot. */

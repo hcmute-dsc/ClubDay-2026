@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react';
 import { CircleQuestionMark, Lightbulb, Trophy, X } from 'lucide-react';
 import { GAME_GUIDE } from '../lib/game-guide';
 import { GAME_THEME } from '../lib/game-theme';
-import { DURATION_MS, GAME_LABEL, type GameKind } from '../lib/types';
+import { GAME_LABEL, type GameKind } from '../lib/types';
+import { durationLabel } from '../lib/format';
 
 /**
  * Hướng dẫn chơi, hai kiểu hiện tuỳ chỗ đứng của người chơi:
@@ -59,7 +60,7 @@ export function GameGuideCard({ game }: { game: GameKind }) {
       <h2 id="guide-heading" className="mb-3 font-display text-lg font-black uppercase tracking-tight">
         Cách chơi {GAME_LABEL[game]}
         <span className="ml-2 font-sans text-sm font-normal text-muted">
-          {DURATION_MS[game] / 1000} giây
+          {durationLabel(game)}
         </span>
       </h2>
       <GuideBody game={game} />

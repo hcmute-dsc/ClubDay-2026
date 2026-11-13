@@ -14,6 +14,8 @@ export class ApiError extends Error {
   constructor(
     readonly code: string,
     readonly status: number,
+    /** Nội dung JSON server trả kèm lỗi — ví dụ danh sách lỗi theo từng câu khi import file sai. */
+    readonly data?: unknown,
   ) {
     super(code);
     this.name = 'ApiError';
@@ -51,7 +53,7 @@ export async function request<T>(path: string, init?: RequestInit): Promise<T> {
       data && typeof data === 'object' && 'error' in data
         ? String((data as { error: unknown }).error)
         : 'HTTP_ERROR';
-    throw new ApiError(code, res.status);
+    throw new ApiError(code, res.status, data);
   }
 
   if (data && typeof data === 'object' && 'serverNow' in data) {

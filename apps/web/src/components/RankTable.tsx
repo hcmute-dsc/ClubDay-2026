@@ -22,6 +22,8 @@ const PODIUM = [
  * ghi "chưa giải" cho tất cả mọi người.
  */
 function details(r: DashboardRow, game: GameKind): [string, string] {
+  // Ai là triệu phú: cả phòng đi cùng nhau từng câu nên không có "thời gian hoàn thành".
+  if (game === 'quiz') return [`${r.correct} đúng · ${r.wrong} sai`, ''];
   const what =
     game === 'draw'
       ? r.solved
@@ -61,6 +63,9 @@ export function RankTable({ rows, game }: { rows: DashboardRow[]; game: GameKind
               )}
               <Avatar name={r.name} seed={r.playerId} size={i === 0 ? 'lg' : 'md'} />
               <p className="mt-2 w-full truncate px-1 text-sm font-semibold">{r.name}</p>
+              {r.members && r.members.length > 0 && (
+                <p className="w-full truncate px-1 text-xs text-muted">{r.members.join(', ')}</p>
+              )}
               <p className="text-xs text-muted">{what}</p>
               <p className="text-xs tabular-nums text-muted">{time}</p>
               <div
@@ -101,8 +106,11 @@ export function RankTable({ rows, game }: { rows: DashboardRow[]; game: GameKind
                 <Avatar name={r.name} seed={r.playerId} />
                 <span className="min-w-0 flex-1">
                   <span className="block truncate font-semibold">{r.name}</span>
+                  {r.members && r.members.length > 0 && (
+                    <span className="block truncate text-xs text-muted">{r.members.join(', ')}</span>
+                  )}
                   <span className="block text-xs text-muted">
-                    {what} · {time}
+                    {time ? `${what} · ${time}` : what}
                   </span>
                 </span>
                 <span className="shrink-0 text-right">

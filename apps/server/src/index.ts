@@ -2,7 +2,8 @@
  * Bootstrap server. File nền tảng — ĐÓNG BĂNG.
  */
 import { buildApp } from './app.js';
-import { HOST, PORT, SNAPSHOT_FILE, warnIfInsecure } from './config.js';
+import { HOST, PORT, QUIZ_BANK_FILE, SNAPSHOT_FILE, warnIfInsecure } from './config.js';
+import { getQuizBankInfo, loadQuizBank } from './services/quiz-bank-store.js';
 import { allRounds, startGc } from './store/store.js';
 import { startRoundClock } from './store/lobby.js';
 import { loadSnapshot, saveSnapshot } from './store/snapshot.js';
@@ -12,6 +13,10 @@ warnIfInsecure();
 
 const restored = loadSnapshot(SNAPSHOT_FILE);
 if (restored > 0) console.log(`  Khôi phục ${restored} lượt từ ${SNAPSHOT_FILE} (chỉ để xem lại)`);
+
+if (loadQuizBank(QUIZ_BANK_FILE)) {
+  console.log(`  Ai là triệu phú: nạp ${getQuizBankInfo().count} câu hỏi đã import từ ${QUIZ_BANK_FILE}`);
+}
 
 registerHealth('rounds', () => String(allRounds().length));
 

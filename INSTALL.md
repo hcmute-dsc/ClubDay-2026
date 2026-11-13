@@ -80,6 +80,9 @@ MODEL_OFFLINE=0
 | `HOST` | `0.0.0.0` thì điện thoại cùng Wi-Fi vào được. `127.0.0.1` là chỉ máy này |
 | `ADMIN_TOKEN` | Mã vào `/admin`. **Bắt buộc đổi** |
 | `MAX_PLAYERS` | Số người mỗi lượt (1–20, mặc định 5). Đặt riêng từng trò: `MAX_PLAYERS_DRAW=3`. Giữa sự kiện chỉnh nhanh ở `/admin` |
+| `QUIZ_BANK_FILE` | Nơi lưu bộ câu hỏi Ai là triệu phú do BTC import (mặc định `data/quiz-questions.json`) |
+| `QUIZ_TEAM_SIZE` | Số người mỗi đội của *Ai là triệu phú* (2–10, mặc định 3). Chỉnh nhanh ở `/admin` |
+| `MAX_PLAYERS_QUIZ` | Số người của *Ai là triệu phú* (1–50, mặc định 50). Trò này không theo `MAX_PLAYERS` chung |
 | `MODEL_CACHE_DIR` | Nơi cất model AI |
 | `MODEL_OFFLINE` | `1` = cấm mọi request tải model từ internet. `0` khi đang cài, `1` ngày sự kiện |
 

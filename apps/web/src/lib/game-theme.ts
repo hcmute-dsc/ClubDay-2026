@@ -1,4 +1,4 @@
-import { Brain, Brush, Calculator, Grid3x3, type LucideIcon } from 'lucide-react';
+import { Brain, Brush, Calculator, Gem, Grid3x3, type LucideIcon } from 'lucide-react';
 import type { GameKind } from './types';
 
 /**
@@ -46,5 +46,12 @@ export const GAME_THEME: Record<
     tile: 'bg-spot text-ink',
     active: 'border-spot shadow-[6px_6px_0_var(--color-spot)]',
     blurb: 'tìm ô lệch màu trong lưới',
+  },
+  quiz: {
+    icon: Gem,
+    chip: 'border-ink bg-quiz text-ink',
+    tile: 'bg-quiz text-ink',
+    active: 'border-quiz shadow-[6px_6px_0_var(--color-quiz)]',
+    blurb: '40 câu hỏi, cả phòng cùng thi',
   },
 };

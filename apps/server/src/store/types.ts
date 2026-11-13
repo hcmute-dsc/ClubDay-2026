@@ -23,7 +23,7 @@
  */
 export * from '@clubday/contract';
 
-import type { GameKind, RoundStatus } from '@clubday/contract';
+import type { GameKind, LifelineKind, QuizHints, QuizPhase, RoundStatus } from '@clubday/contract';
 
 export interface Question {
   prompt: string;
@@ -102,6 +102,42 @@ export interface SpotPlayerState {
   lastPickAt: number;
 }
 
+/**
+ * TRACK E — một ĐỘI của Ai là triệu phú. Mọi thứ từng thuộc về từng người (đáp án,
+ * quyền trợ giúp, chuỗi đúng) nay thuộc về ĐỘI: cả đội chỉ có một đáp án mỗi câu.
+ */
+export interface QuizTeam {
+  id: string;
+  name: string;
+  color: string;
+  /** Thứ tự vào đội — cũng là thứ tự xoay vòng đội trưởng. */
+  memberIds: string[];
+  score: number;
+  correct: number;
+  wrong: number;
+  /**
+   * Đáp án ĐỘI đã chốt cho câu đang mở (0–3), `null` = chưa chốt. Chốt là chốt:
+   * chọn rồi không đổi được.
+   */
+  answer: number | null;
+  /** ⏱ Lúc SERVER nhận đáp án — mốc tính phần thưởng tốc độ. */
+  answeredAt: number | null;
+  /** Số câu đúng LIÊN TIẾP hiện tại. */
+  streak: number;
+  /** Điểm nhận được ở câu gần nhất (0 nếu sai / bỏ trống). */
+  lastDelta: number;
+  /**
+   * Quyền trợ giúp ĐÃ DÙNG → dùng ở câu số mấy. Có mặt là hết quyền. Giữ số câu chứ
+   * không phải boolean để màn hình biết "50:50 đã dùng ở câu 7".
+   */
+  used: Partial<Record<LifelineKind, number>>;
+  /**
+   * Kết quả trợ giúp của CÂU ĐANG MỞ, giữ lại để tải lại trang vẫn thấy: nếu chỉ
+   * trả lời một lần lúc bấm thì F5 là mất, mà quyền đã bị trừ.
+   */
+  hints: QuizHints;
+}
+
 export interface Player {
   id: string;
   name: string;
@@ -137,6 +173,33 @@ export interface Player {
   spot: SpotPlayerState;
 }
 
+/** Một câu của lượt Ai là triệu phú, ĐÃ xáo đáp án. `answer` là chỉ số đáp án đúng. */
+export interface QuizQuestion {
+  text: string;
+  options: string[];
+  answer: number;
+  category: string;
+  level: 1 | 2 | 3;
+  explain: string;
+}
+
+export interface QuizRoundState {
+  /** Sinh khi BTC bấm BẮT ĐẦU; `null` khi lượt còn ở phòng chờ. */
+  questions: QuizQuestion[] | null;
+  /** Câu đang mở, tính từ 0. */
+  index: number;
+  phase: QuizPhase;
+  /** ⏱ Mốc của CÂU HIỆN TẠI — khác `Round.endsAt` (cầu chì cả lượt). */
+  startedAt: number;
+  endsAt: number;
+  /** Số ĐỘI chọn từng đáp án — chỉ có nghĩa ở pha `reveal`. */
+  distribution: number[];
+  /** Các đội, chia khi BTC bấm BẮT ĐẦU; mảng rỗng khi còn ở phòng chờ. */
+  teams: QuizTeam[];
+  /** Số người mỗi đội đã CHỐT lúc bắt đầu (0 = chưa bắt đầu, lúc đó dùng giá trị BTC đang đặt). */
+  teamSize: number;
+}
+
 export interface Round {
   id: string;
   /** ⭐ Quyết định Play.tsx render màn hình của game nào. */
@@ -167,6 +230,8 @@ export interface Round {
    * gặp đúng một đề bài.
    */
   memory: { sequence: number[] | null };
+  /** TRACK E: câu hỏi và con trỏ câu đang mở. */
+  quiz: QuizRoundState;
   /** Tăng mỗi lần lượt đổi → SSE phát khi version đổi. */
   version: number;
   /** false = lượt khôi phục từ snapshot sau khi server restart. */

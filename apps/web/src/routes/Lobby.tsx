@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
-import { House, TriangleAlert, Users } from 'lucide-react';
+import { House, TriangleAlert, Users, UsersRound } from 'lucide-react';
 import { api } from '../lib/api';
 import { loadSession } from '../lib/session';
 import { useRoundStream } from '../lib/sse';
@@ -44,6 +44,8 @@ export function Lobby() {
   // từng trò, nên vẽ cứng 5 ô là nói sai với người đang đứng chờ.
   const maxPlayers = state?.maxPlayers ?? DEFAULT_MAX_PLAYERS;
   const slots = Array.from({ length: maxPlayers }, (_, i) => players[i]);
+  /** Quá chừng này chỗ thì không vẽ ô trống nữa — xem nhánh `crowded` bên dưới. */
+  const crowded = maxPlayers > 12;
 
   if (error && !state) {
     return (
@@ -91,6 +93,21 @@ export function Lobby() {
             {players.length}/{maxPlayers}
           </span>
         </div>
+        {crowded ? (
+          // Phòng đông (Ai là triệu phú, tới 50 người): vẽ 50 ô "Đang chờ…" thì dài cả
+          // chục màn hình điện thoại. Chỉ liệt kê người ĐÃ vào, dạng lưới tên.
+          <ul className="grid grid-cols-2 gap-2">
+            {players.map((p) => (
+              <li key={p.id} className="flex animate-pop items-center gap-2 border-2 border-line bg-surface-2 p-2">
+                <Avatar name={p.name} seed={p.id} />
+                <span className="min-w-0 flex-1 truncate text-sm font-semibold">{p.name}</span>
+                {p.id === session?.playerId && (
+                  <span className="shrink-0 bg-primary px-1.5 text-[0.65rem] font-bold text-white">Bạn</span>
+                )}
+              </li>
+            ))}
+          </ul>
+        ) : (
         <ul className="space-y-2">
           {slots.map((p, i) =>
             p ? (
@@ -116,7 +133,19 @@ export function Lobby() {
             ),
           )}
         </ul>
+        )}
       </section>
+
+      {/* Ai là triệu phú chơi theo đội: báo trước sĩ số để người chơi biết mình sắp ngồi với ai. */}
+      {state?.game === 'quiz' && state.teamSize !== undefined && (
+        <p className="card flex items-start gap-3 p-4 text-sm font-semibold">
+          <UsersRound aria-hidden="true" className="mt-0.5 h-5 w-5 shrink-0 text-quiz" />
+          <span>
+            Đội {state.teamSize} người — chia ngẫu nhiên khi BTC bắt đầu. Mỗi câu một đội trưởng, mỗi người chỉ
+            thấy một phần đáp án, nên nhớ đọc to cho nhau.
+          </span>
+        </p>
+      )}
 
       {/*
         Luật bày SẴN ở đây, không giấu sau nút: đứng đợi BTC là khoảng thời gian

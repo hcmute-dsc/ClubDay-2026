@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { ChevronLeft, ChevronRight, House, KeyRound, TriangleAlert } from 'lucide-react';
 import { api, ApiError } from '../lib/api';
 import { loadAdminToken, saveAdminToken } from '../lib/session';
@@ -9,11 +9,14 @@ import { DscLogo } from '../components/Logo';
 import { ActiveGamePanel } from '../components/admin/ActiveGamePanel';
 import { GameTile } from '../components/admin/GameTile';
 import { QrPanel } from '../components/admin/QrPanel';
+import { QuizImportPanel } from '../components/admin/QuizImportPanel';
 import { RoundRow } from '../components/admin/RoundRow';
 import {
   GAME_KINDS,
   DEFAULT_MAX_PLAYERS,
-  MAX_PLAYERS_CAP,
+  QUIZ_TEAM_SIZE_MAX,
+  QUIZ_TEAM_SIZE_MIN,
+  maxPlayersCap,
   type GameKind,
   type RoundSummary,
 } from '../lib/types';
@@ -39,6 +42,7 @@ const PAGE_SIZE = 8;
  * phải cuộn qua bốn khối không liên quan.
  */
 export function Admin() {
+  const navigate = useNavigate();
   const [token, setToken] = useState(loadAdminToken);
   const [rounds, setRounds] = useState<RoundSummary[]>([]);
   /** Trò đang mở — chỉ MỘT trò tại một thời điểm, do màn hình này quyết định. */
@@ -47,6 +51,10 @@ export function Admin() {
   const [lastGame, setLastGame] = useState<GameKind>('math');
   /** Sức chứa từng trò. Khởi đầu từ .env của server, BTC chỉnh ngay tại đây. */
   const [maxPlayers, setMaxPlayers] = useState<Record<GameKind, number> | null>(null);
+  /** Số câu của bộ Ai là triệu phú đang dùng — đổi khi BTC import file. */
+  const [quizCount, setQuizCount] = useState<number | undefined>(undefined);
+  /** Số người mỗi đội của Ai là triệu phú. `undefined` = server chưa báo (bản cũ) → không vẽ bộ chỉnh. */
+  const [quizTeamSize, setQuizTeamSize] = useState<number | undefined>(undefined);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const [page, setPage] = useState(0);
@@ -65,6 +73,8 @@ export function Admin() {
       setActiveGame(res.activeGame);
       setLastGame(res.lastGame);
       setMaxPlayers(res.maxPlayers);
+      setQuizCount(res.quizBank.count);
+      setQuizTeamSize(res.quizTeamSize);
       setError('');
     } catch (err) {
       setError(
@@ -89,7 +99,7 @@ export function Admin() {
    * giây thì BTC bấm tiếp, và tăng hai bậc cho một cú bấm.
    */
   async function changeMaxPlayers(game: GameKind, value: number) {
-    if (value < 1 || value > MAX_PLAYERS_CAP) return;
+    if (value < 1 || value > maxPlayersCap(game)) return;
     setMaxPlayers((m) => (m ? { ...m, [game]: value } : m));
     try {
       const res = await api.setMaxPlayers(game, value, token);
@@ -97,6 +107,19 @@ export function Admin() {
     } catch {
       setError('Không đổi được số người.');
       void refresh(); // lấy lại con số thật của server
+    }
+  }
+
+  /** Đổi số người mỗi đội. Vẽ số mới ngay, như `changeMaxPlayers`. */
+  async function changeQuizTeamSize(value: number) {
+    if (value < QUIZ_TEAM_SIZE_MIN || value > QUIZ_TEAM_SIZE_MAX) return;
+    setQuizTeamSize(value);
+    try {
+      const res = await api.setQuizTeamSize(value, token);
+      setQuizTeamSize(res.quizTeamSize);
+    } catch {
+      setError('Không đổi được số người mỗi đội.');
+      void refresh();
     }
   }
 
@@ -187,12 +210,23 @@ export function Admin() {
             game={g}
             active={g === activeGame}
             maxPlayers={maxPlayers?.[g] ?? DEFAULT_MAX_PLAYERS}
+            quizCount={quizCount}
+            teamSize={quizTeamSize}
+            onChangeTeamSize={(value) => void changeQuizTeamSize(value)}
             disabled={busy || !token}
-            onCreate={() => void act(() => api.createRound(g, token), 'Không tạo được lượt.')}
+            onCreate={() =>
+              void act(async () => {
+                const res = await api.createRound(g, token);
+                // Ai là triệu phú cần màn hình điều khiển/chiếu riêng: đi thẳng tới đó.
+                if (g === 'quiz') navigate(`/admin/quiz/${res.roundId}`);
+              }, 'Không tạo được lượt.')
+            }
             onChangeMaxPlayers={(value) => void changeMaxPlayers(g, value)}
           />
         ))}
       </section>
+
+      <QuizImportPanel token={token} onChanged={(info) => setQuizCount(info.count)} />
 
       <QrPanel
         joinUrl={joinUrl}

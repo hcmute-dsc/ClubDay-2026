@@ -1,0 +1,262 @@
+[
+  {
+    "text": "Vợ dặn chồng lập trình viên: \"Mua 1 ổ bánh mì, nếu tiệm có trứng thì mua 6 nhé!\". Tiệm có bán trứng, anh chồng làm đúng theo logic máy tính sẽ xách gì về?",
+    "options": [
+      "1 ổ bánh mì và 6 quả trứng",
+      "6 quả trứng và không có ổ bánh mì nào",
+      "6 ổ bánh mì và không có quả trứng nào",
+      "6 ổ bánh mì và 6 quả trứng"
+    ],
+    "answer": "C",
+    "level": 1,
+    "category": "Logic",
+    "explain": "6 ổ bánh mì! Máy tính hiểu cực kỳ máy móc theo đúng câu lệnh: đối tượng đang mua là \"bánh mì\", gặp điều kiện \"tiệm có trứng\" là Đúng nên đổi số lượng bánh mì từ 1 thành 6!"
+  },
+  {
+    "text": "Trong Word, màn hình đang có sẵn chữ \"OK\". Bạn bấm lần lượt 3 tổ hợp phím: Ctrl+A, rồi Ctrl+C, rồi Ctrl+V. Lúc này trên màn hình hiện mấy chữ \"OK\"?",
+    "options": [
+      "Vẫn chỉ có 1 chữ \"OK\"",
+      "Có 2 chữ \"OK\" nằm sát nhau",
+      "Có 3 chữ \"OK\" nằm nối tiếp",
+      "Màn hình trắng tinh, mất chữ \"OK\""
+    ],
+    "answer": "A",
+    "level": 1,
+    "category": "Đố mẹo",
+    "explain": "Vẫn chỉ có 1 chữ \"OK\"! Vì sau khi bấm Ctrl+A, chữ \"OK\" cũ vẫn đang bị bôi đen; bấm Ctrl+V ngay lập tức sẽ dán đè chữ mới lên chính chữ cũ. Phải bấm Ctrl+V thêm lần nữa mới thành 2 chữ!"
+  },
+  {
+    "text": "Tải bộ phim nặng 100 MB: 9 giây đầu chạy vèo vèo lên 99%, nhưng đúng 1% cuối lại kẹt mất 91 giây mới xong. Tốc độ tải trung bình cả bộ phim là bao nhiêu?",
+    "options": [
+      "0.5 MB/giây",
+      "1 MB/giây",
+      "5 MB/giây",
+      "10 MB/giây"
+    ],
+    "answer": "B",
+    "level": 1,
+    "category": "Suy luận",
+    "explain": "1 MB/giây! Đừng để thanh 99% đánh lừa cảm giác: tổng dung lượng là 100 MB và tổng thời gian chờ là 9 + 91 = 100 giây, chia ra trung bình đúng 1 MB/giây."
+  },
+  {
+    "text": "Nhà lắp gói mạng 1000 Mbps, nối qua cục phát Wi-Fi đời cũ (tối đa 100 Mbps) phát cho điện thoại xịn (hỗ trợ 500 Mbps). Điện thoại nhận tối đa bao nhiêu?",
+    "options": [
+      "1000 Mbps",
+      "533 Mbps",
+      "500 Mbps",
+      "100 Mbps"
+    ],
+    "answer": "D",
+    "level": 1,
+    "category": "Suy luận",
+    "explain": "Chỉ tối đa 100 Mbps! Giống như đường ống nước, đoạn ống hẹp nhất (cục Wi-Fi đời cũ 100 Mbps) sẽ quyết định tốc độ tối đa của toàn bộ dòng chảy phía sau."
+  },
+  {
+    "text": "Nhân viên dán nhầm tờ mã QR chuyển khoản bị lộn ngược đầu 180 độ trên quầy. Khi khách giơ thẳng điện thoại vào quét, chuyện gì xảy ra?",
+    "options": [
+      "Vẫn quét mượt ngay lập tức như bình thường",
+      "Không quét được, khách phải tự xoay ngược điện thoại",
+      "Quét được nhưng dãy số tài khoản bị đảo ngược",
+      "Màn hình hiện cảnh báo nhắc xoay lại mã QR"
+    ],
+    "answer": "A",
+    "level": 1,
+    "category": "Đố mẹo",
+    "explain": "Quét mượt ngay lập tức! Bạn để ý trên mọi mã QR đều có 3 ô vuông to ở 3 góc (cố tình chừa trống góc thứ 4) — đó chính là mốc định vị giúp phần mềm tự biết mã đang bị ngược để xoay lại trong 1 tích tắc."
+  },
+  {
+    "text": "Ô tích \"Tôi không phải là người máy\" trên web thực chất dựa vào dấu hiệu chính nào để phân biệt người thật với phần mềm tự động?",
+    "options": [
+      "Đo lực nhấn chuột mạnh hay nhẹ của ngón tay",
+      "Bật nhanh camera trước để quét chuyển động mắt",
+      "Đếm xem bạn đọc dòng chữ mất đúng mấy giây",
+      "Xem đường di chuột hơi rung tự nhiên trước khi bấm"
+    ],
+    "answer": "D",
+    "level": 1,
+    "category": "Suy luận",
+    "explain": "Phần mềm tự động (bot) thường nhảy thẳng tâm ô vuông theo đường thẳng tắp trong 0.001 giây, còn tay người thật luôn di chuột hơi cong, rung nhẹ và có lịch sử lướt trang tự nhiên trước khi bấm."
+  },
+  {
+    "text": "Tại sao chép bộ phim 10 GB vào USB mất 5 phút, nhưng bấm Xóa vĩnh viễn (Shift + Delete) lại biến mất trong chưa đầy 1 giây?",
+    "options": [
+      "Dòng điện xóa dữ liệu chạy nhanh gấp trăm lần dòng điện ghi",
+      "Máy chỉ gạch tên phim khỏi mục lục để chờ ghi đè sau",
+      "Máy nén bộ phim nhỏ xíu lại trước rồi mới xóa một lần",
+      "Máy chỉ ẩn hình đi rồi âm thầm xóa tiếp dưới nền 5 phút"
+    ],
+    "answer": "B",
+    "level": 1,
+    "category": "Suy luận",
+    "explain": "Máy tính rất \"lười\" thông minh: khi xóa, nó không tốn công tẩy trắng 10 GB dữ liệu mà chỉ gạch tên phim khỏi trang mục lục rồi đánh dấu vùng đó là \"đất trống\" cho tệp mới chép đè lên sau!"
+  },
+  {
+    "text": "Một video dài 60 phút. Bạn chỉnh tốc độ phát nhanh 1.5x và xem liên tục từ đầu đến cuối thì tốn bao nhiêu phút?",
+    "options": [
+      "30 phút",
+      "35 phút",
+      "40 phút",
+      "45 phút"
+    ],
+    "answer": "C",
+    "level": 2,
+    "category": "Logic",
+    "explain": "40 phút (lấy 60 chia cho 1.5 = 40)! Ai nhẩm vội thành 30 phút là đang nhầm sang tốc độ tua gấp đôi (2.0x) rồi nhé."
+  },
+  {
+    "text": "Bạn kéo độ sáng màn hình điện thoại về mức tối nhất (0%), rồi bấm Chụp màn hình gửi cho bạn bè đang đứng ngoài nắng. Ảnh bên máy bạn kia hiện thế nào?",
+    "options": [
+      "Tối thui gần như đen xì giống hệt màn hình lúc chụp",
+      "Bị mờ tối đi một nửa do chụp thiếu ánh sáng nền",
+      "Máy tự đẩy sáng lên 50% trong tích tắc rồi mới chụp",
+      "Sáng rõ bình thường theo độ sáng máy của người nhận"
+    ],
+    "answer": "D",
+    "level": 2,
+    "category": "Đố mẹo",
+    "explain": "Sáng rõ bình thường! Chụp màn hình là lưu dữ liệu hình ảnh bên trong phần mềm chứ không phải lấy máy ảnh chụp tấm kính bên ngoài, nên đèn nền màn hình của bạn tối cỡ nào ảnh gửi đi vẫn nét căng."
+  },
+  {
+    "text": "Nam lén bật Tab ẩn danh trên máy công ty, dùng Wi-Fi văn phòng tìm việc mới rồi đóng cửa sổ. Ai dưới đây hoàn toàn MÙ TỊT không biết chuyện này?",
+    "options": [
+      "Cô đồng nghiệp mượn đúng chiếc máy đó dùng ngay sau Nam",
+      "Anh IT quản lý hệ thống mạng Wi-Fi của văn phòng",
+      "Nhà mạng viễn thông cung cấp đường truyền cho công ty",
+      "Trang web tuyển dụng mà Nam vừa mở lên xem việc"
+    ],
+    "answer": "A",
+    "level": 2,
+    "category": "Đố mẹo",
+    "explain": "Chỉ che mắt được người dùng chung máy tính sau đó thôi! Tab ẩn danh không lưu lịch sử trên máy, nhưng đường truyền vẫn đi qua cục Wi-Fi công ty, nhà mạng và trang web tuyển dụng như thường."
+  },
+  {
+    "text": "Trước giờ săn sale, chủ shop láu cá chỉnh hệ thống tự động tăng giá mọi món lên 20%, rồi tung mã giảm giá 20% trên giá mới đó. Pha \"tự hủy\" này dẫn tới đâu?",
+    "options": [
+      "Khách mua đúng bằng giá gốc, chủ shop hòa vốn",
+      "Khách mua đắt hơn 4% giá gốc, chủ shop lời to",
+      "Khách mua rẻ hơn 4% giá gốc, chủ shop tự lỗ",
+      "Khách mua rẻ hơn 2% giá gốc, chủ shop lỗ nhẹ"
+    ],
+    "answer": "C",
+    "level": 2,
+    "category": "Logic",
+    "explain": "Chủ shop tự lỗ 4%! Món hàng 100k tăng 20% thành 120k; sau đó giảm 20% trên mốc 120k là giảm mất 24k, chỉ thu về 96k!"
+  },
+  {
+    "text": "Rạp chỉ còn 1 ghế G8. Hai người ở hai nơi bấm thanh toán ghế G8 cùng một tích tắc trên app quên làm bước \"khóa giữ chỗ\". Chuyện gì xảy ra?",
+    "options": [
+      "Ai mạng khỏe hơn được ghế, người kia tự động hoàn tiền",
+      "Cả hai cùng bị trừ tiền và ra rạp tranh nhau ghế G8",
+      "Hệ thống tự hủy cả hai đơn, ghế G8 vẫn bỏ trống",
+      "Người chậm hơn một chút bị đẩy sang ghế sát màn hình"
+    ],
+    "answer": "B",
+    "level": 2,
+    "category": "Suy luận",
+    "explain": "Cả hai cùng mua thành công! Do không khóa tạm thời lúc thanh toán, cả hai lượt kiểm tra cùng nhìn thấy ghế G8 đang trống trước khi bên kia kịp đổi trạng thái, thế là một ghế bán cho hai người."
+  },
+  {
+    "text": "Dạy AI phân biệt Chó sói (ảnh toàn chụp trên tuyết) và Ngáo Husky (ảnh toàn trên cỏ). Khi đưa ảnh chú Husky ngồi trên tuyết, AI dễ phán là con gì nhất?",
+    "options": [
+      "Chó sói — vì AI học vẹt cứ thấy nền tuyết là Sói",
+      "Husky — vì AI luôn tự tách riêng con vật khỏi cảnh nền",
+      "Gấu Bắc Cực — vì AI tự ghép lông dày với tuyết trắng",
+      "Đứng hình báo lỗi — vì AI chưa gặp cảnh này bao giờ"
+    ],
+    "answer": "A",
+    "level": 2,
+    "category": "Suy luận",
+    "explain": "Đây là câu chuyện có thật nổi tiếng ngành AI: máy tính luôn tìm mẹo dễ nhất để đoán (thấy mảng trắng xóa của tuyết dễ nhận ra hơn mặt con chó nhiều), nên cứ có tuyết là phán Chó sói!"
+  },
+  {
+    "text": "Thực tập sinh cài 3 luật bắt buộc cho mật khẩu mới: ít nhất 4 chữ cái, ít nhất 4 chữ số, và tổng độ dài DƯỚI 8 ký tự. Ai tạo được tài khoản trên trang này?",
+    "options": [
+      "Người gõ đúng 4 chữ và 4 số (như abcd1234)",
+      "Người gõ chữ xen kẽ với số (như a1b2c3d4)",
+      "Không một ai tạo nổi vì ba luật tự đá nhau",
+      "Người viết hoa chữ đầu để gộp chung thành 1 ký tự"
+    ],
+    "answer": "C",
+    "level": 2,
+    "category": "Logic",
+    "explain": "Không ai tạo nổi! Ít nhất 4 chữ cộng 4 số thì tối thiểu đã dài 8 ký tự rồi, trong khi luật thứ ba lại đòi DƯỚI 8 ký tự (tức tối đa chỉ 7 ký tự)."
+  },
+  {
+    "text": "Họp online, Mic đang TẮT. Thấy máy lag, bạn nhấp liên tục 5 lần vào nút Mic rồi buột miệng than \"Họp gì lắm thế!\". Nếu máy nhận đủ 5 cú nhấp, cả phòng có nghe thấy không?",
+    "options": [
+      "Thoát nạn an toàn vì sau 5 lần nhấp Mic quay về TẮT",
+      "Không ai nghe thấy vì nhấp liên tục làm treo luôn Mic",
+      "Chỉ người chủ trì phòng họp mới nghe thấy tiếng bạn",
+      "Lộ sạch sành sanh vì sau 5 lần nhấp Mic chuyển sang BẬT"
+    ],
+    "answer": "D",
+    "level": 3,
+    "category": "Logic",
+    "explain": "Nghe rõ mồn một luôn! Đếm từ trạng thái đang TẮT: nhấp 1 (Bật) -> 2 (Tắt) -> 3 (Bật) -> 4 (Tắt) -> 5 (BẬT). Nhấp số lần lẻ sẽ luôn đổi sang trạng thái ngược với ban đầu!"
+  },
+  {
+    "text": "Robot hút bụi được cài: \"Hễ pin trên 20% thì hút phòng khách, xong kiểm tra pin làm tiếp\". Do kẹt sạc dự phòng trên lưng nên pin luôn 100%, robot sẽ làm gì?",
+    "options": [
+      "Hút xong 1 lượt phòng khách rồi tự sang phòng ngủ",
+      "Cày nát phòng khách lặp đi lặp lại không bao giờ nghỉ",
+      "Đứng im tại chỗ từ đầu vì tưởng đang nằm ở trạm sạc",
+      "Tự ngắt nguồn sau 3 lượt để bảo vệ động cơ khỏi nóng"
+    ],
+    "answer": "B",
+    "level": 3,
+    "category": "Logic",
+    "explain": "Cày nát phòng khách mãi mãi! Vì điều kiện dừng (pin tụt xuống 20%) không bao giờ xảy ra, robot rơi vào \"vòng lặp vô tận\" — thủ phạm quen thuộc làm treo đơ phần mềm."
+  },
+  {
+    "text": "Mở game mất 10 giây (9 giây chờ Wi-Fi quán tải dữ liệu + 1 giây máy vẽ hình). Bỏ 40 triệu đổi điện thoại mới vẽ hình nhanh gấp 10 lần rồi ngồi đúng quán đó mở game thì đợi bao lâu?",
+    "options": [
+      "1.0 giây",
+      "5.0 giây",
+      "9.1 giây",
+      "9.9 giây"
+    ],
+    "answer": "C",
+    "level": 3,
+    "category": "Đố mẹo",
+    "explain": "Vẫn phải đợi 9.1 giây! Điện thoại 40 triệu chỉ rút ngắn bước vẽ hình từ 1 giây xuống 0.1 giây, còn 9 giây chờ mạng Wi-Fi rùa bò của quán vẫn giữ nguyên (9 + 0.1 = 9.1s)."
+  },
+  {
+    "text": "Khi bấm \"Quên mật khẩu\", dù bạn vừa quét khuôn mặt xác minh chính chủ ngay trên app, vì sao hệ thống vẫn bắt đặt mật khẩu mới chứ không hiện lại mật khẩu cũ?",
+    "options": [
+      "Mật khẩu bị mã hóa một chiều, chính hệ thống cũng không biết",
+      "Ngay lúc bấm nút Quên, hệ thống đã tự xóa trắng mật khẩu cũ",
+      "Luật viễn thông cấm ứng dụng hiển thị lại mật khẩu cũ",
+      "Bắt đổi mới để ép người dùng tăng điểm bảo mật định kỳ"
+    ],
+    "answer": "A",
+    "level": 3,
+    "category": "Suy luận",
+    "explain": "Các ứng dụng lớn băm mật khẩu một chiều thành chuỗi ký tự rối không thể dịch ngược (để nhỡ bị lộ dữ liệu hacker cũng chịu thua), nên chính hệ thống cũng không biết mật khẩu cũ của bạn là gì!"
+  },
+  {
+    "text": "Gõ số điện thoại \"0981234567\" vào ô mặc định của Excel rồi bấm Enter, số 0 đầu tiên lập tức biến mất. Vì sao Excel lại \"nuốt\" mất số 0 này?",
+    "options": [
+      "Excel tự cắt số 0 đầu để chờ ghép mã vùng quốc tế (+84)",
+      "Ô mặc định của Excel chỉ cho hiển thị tối đa 9 chữ số",
+      "Số 0 đứng đầu là ký hiệu lệnh ẩn nên tự động bị lọc bỏ",
+      "Excel hiểu đó là số toán học, mà số 0 đứng đầu thì vô nghĩa"
+    ],
+    "answer": "D",
+    "level": 3,
+    "category": "Đố mẹo",
+    "explain": "Excel mặc định tưởng bạn nhập con số để cộng trừ (981 triệu...), mà trong toán học viết 05 hay 098 đều tự rút gọn thành 5 và 98. Phải định dạng ô là Văn bản (Text) hoặc thêm dấu nháy đơn ' ở đầu mới giữ được số 0!"
+  },
+  {
+    "text": "Khi tính năng \"Phát ngẫu nhiên\" (Shuffle) trộn nhạc ngẫu nhiên 100%, người nghe lại chê lỗi vì đôi khi gặp 2 bài cùng ca sĩ phát liền nhau. Kỹ sư đã sửa bằng cách nào?",
+    "options": [
+      "Tăng độ ngẫu nhiên lên gấp đôi sau mỗi bài hát",
+      "Làm thuật toán bớt ngẫu nhiên đi để cố tình tách cùng ca sĩ ra",
+      "Giữ nguyên thuật toán, chỉ đổi màu nút để đánh lừa cảm giác",
+      "Tự động khóa ca sĩ vừa hát trong suốt 24 giờ tiếp theo"
+    ],
+    "answer": "B",
+    "level": 3,
+    "category": "Suy luận",
+    "explain": "Chuyện thật như đùa ở Apple và Spotify: tung xúc xắc ngẫu nhiên thật sự thì chuyện ra 2 bài cùng ca sĩ liền nhau rất bình thường, nhưng con người lại ghét thế. Kỹ sư đành làm thuật toán... bớt ngẫu nhiên đi (cố tình rải đều ca sĩ) để chiều lòng tai người nghe!"
+  }
+]

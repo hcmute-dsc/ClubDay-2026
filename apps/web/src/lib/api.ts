@@ -1,5 +1,12 @@
-import { getJson as get, postJson as json, request } from './http';
-import type { DashboardRow, GameKind, RoundState, RoundSummary } from './types';
+import { ApiError, getJson as get, postJson as json, request } from './http';
+import type {
+  DashboardRow,
+  GameKind,
+  QuizBankInfo,
+  QuizImportProblem,
+  RoundState,
+  RoundSummary,
+} from './types';
 
 /**
  * Phần gọi HTTP nằm ở `lib/http.ts` và dùng chung cho mọi file api-*.
@@ -16,6 +23,36 @@ export interface ClientConfig {
   activeGame: GameKind | null;
   /** Số người tối đa mỗi lượt, theo từng trò. */
   maxPlayers: Record<GameKind, number>;
+  /** Số câu của bộ Ai là triệu phú đang dùng. Server cũ chưa gửi → `undefined`, và màn hình không hiện số câu. */
+  quizQuestionCount?: number;
+  /** Số người mỗi đội của Ai là triệu phú. Server cũ chưa gửi → `undefined`. */
+  quizTeamSize?: number;
+}
+
+/** Một câu trong bộ đang dùng — CÓ đáp án, nên chỉ lấy được bằng mã quản trị. */
+export interface QuizBankQuestion {
+  text: string;
+  options: string[];
+  /** Chỉ số (0–3) của đáp án đúng. */
+  answer: number;
+  level: 1 | 2 | 3;
+  category: string;
+  explain: string;
+}
+
+export interface QuizImportOk {
+  ok: true;
+  info: QuizBankInfo;
+  warnings: string[];
+  /** false = import được nhưng KHÔNG ghi được ra đĩa (restart sẽ mất). */
+  saved: boolean;
+}
+
+/** Lỗi import: server trả 400 `INVALID_QUESTIONS` kèm danh sách lỗi theo số câu. */
+export function importProblems(err: unknown): QuizImportProblem[] | null {
+  if (!(err instanceof ApiError) || err.code !== 'INVALID_QUESTIONS') return null;
+  const data = err.data as { problems?: QuizImportProblem[] } | null;
+  return data?.problems ?? null;
 }
 
 /** `null` = game đó chưa có lượt nào đang chờ. */
@@ -68,6 +105,9 @@ export const api = {
       /** Trò mở gần đây nhất — dùng cho nút "Mở lại" khi đang tạm đóng. */
       lastGame: GameKind;
       maxPlayers: Record<GameKind, number>;
+      quizBank: QuizBankInfo;
+      /** Số người mỗi đội của Ai là triệu phú. Server cũ chưa gửi → `undefined`. */
+      quizTeamSize?: number;
       rounds: RoundSummary[];
     }>('/api/admin/rounds', token),
 
@@ -78,12 +118,28 @@ export const api = {
       json({ game, value }, token),
     ),
 
+  /** BTC: đổi số người mỗi đội của Ai là triệu phú. Áp cho lượt bắt đầu từ đây về sau. */
+  setQuizTeamSize: (value: number, token: string) =>
+    request<{ quizTeamSize: number }>('/api/admin/quiz/team-size', json({ value }, token)),
+
   /** BTC: chọn trò được chơi lúc này (`null` = tạm đóng). */
   setActiveGame: (game: GameKind | null, token: string) =>
     request<{ activeGame: GameKind | null; closed: string[] }>(
       '/api/admin/active-game',
       json({ game }, token),
     ),
+
+  /** BTC: xem bộ câu hỏi đang dùng (kèm đáp án). */
+  quizQuestions: (token: string) =>
+    get<{ info: QuizBankInfo; questions: QuizBankQuestion[] }>('/api/admin/quiz/questions', token),
+
+  /** BTC: import bộ câu hỏi từ nội dung file JSON. Sai thì ném `ApiError` (xem `importProblems`). */
+  importQuiz: (data: unknown, fileName: string, token: string) =>
+    request<QuizImportOk>('/api/admin/quiz/questions', json({ fileName, data }, token)),
+
+  /** BTC: bỏ bộ đã import, quay về 40 câu có sẵn. */
+  resetQuiz: (token: string) =>
+    request<{ ok: true; info: QuizBankInfo; saved: boolean }>('/api/admin/quiz/questions/reset', json({}, token)),
 
   skipRound: (roundId: string, token: string) =>
     request<{ ok: true }>(`/api/admin/rounds/${roundId}/skip`, json({}, token)),

@@ -1,4 +1,4 @@
-import type { GameKind } from './types';
+import { QUIZ_QUESTION_MS, type GameKind } from './types';
 
 /**
  * Luật chơi của từng trò, viết cho NGƯỜI CHƠI đọc trong mười giây.
@@ -56,5 +56,17 @@ export const GAME_GUIDE: Record<GameKind, GameGuide> = {
     ],
     scoring: 'Điểm = CẤP CAO NHẤT vượt được. Chạm trượt thì về cấp 1, kỷ lục vẫn giữ.',
     tip: 'Nhìn lướt cả lưới, đừng soi từng ô — mắt bắt chỗ lệch nhanh hơn là dò.',
+  },
+  quiz: {
+    steps: [
+      `Chơi theo ĐỘI, BTC chia ngẫu nhiên. Mỗi câu có ${QUIZ_QUESTION_MS / 1000} giây.`,
+      'Màn chiếu chỉ có câu hỏi. Mỗi người chỉ thấy MỘT PHẦN đáp án trên điện thoại.',
+      'Đọc to đáp án của bạn cho cả đội nghe, rồi cùng bàn.',
+      'Mỗi câu một ĐỘI TRƯỞNG (đổi vòng): chỉ thấy nút A–D, không thấy chữ.',
+      'Chỉ đội trưởng chốt được — chốt là hết đổi, cả đội cùng một đáp án.',
+      'Cả đội có 2 quyền, mỗi quyền một lần: 50:50 và x2 điểm (từ câu 11).',
+    ],
+    scoring: 'Điểm tính cho cả ĐỘI: đúng được 600–1000 điểm, chốt càng nhanh càng cao. Sai hoặc chưa chốt 0 điểm.',
+    tip: 'Đọc kèm chữ cái (A, B, C, D) cho đội trưởng. Dùng quyền TRƯỚC khi chốt; x2 mà sai thì mất quyền.',
   },
 };

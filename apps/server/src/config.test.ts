@@ -1,5 +1,14 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { GAME_KINDS, MAX_PLAYERS, MAX_PLAYERS_CAP } from './store/types.js';
+import {
+  GAME_KINDS,
+  MAX_PLAYERS,
+  MAX_PLAYERS_CAP,
+  MAX_PLAYERS_CAP_QUIZ,
+  MAX_PLAYERS_DEFAULT_QUIZ,
+} from './store/types.js';
+
+/** Các trò chơi theo lượt ở booth — Ai là triệu phú có luật sức chứa riêng (xem cuối file). */
+const BOOTH_GAMES = GAME_KINDS.filter((g) => g !== 'quiz');
 
 /**
  * Cấu hình đọc biến môi trường MỘT LẦN lúc nạp module, nên mỗi ca test phải nạp
@@ -10,6 +19,7 @@ async function loadWith(env: Record<string, string>) {
   vi.unstubAllEnvs();
   // Xoá sạch mọi biến của lần trước, kể cả biến từ .env thật của máy đang chạy.
   vi.stubEnv('MAX_PLAYERS', '');
+  vi.stubEnv('QUIZ_TEAM_SIZE', '');
   for (const g of GAME_KINDS) vi.stubEnv(`MAX_PLAYERS_${g.toUpperCase()}`, '');
   for (const [k, v] of Object.entries(env)) vi.stubEnv(k, v);
   return import('./config.js');
@@ -23,12 +33,12 @@ afterEach(() => {
 describe('config — số người tối đa mỗi trò', () => {
   it('không đặt gì thì mọi trò dùng mặc định', async () => {
     const { MAX_PLAYERS_BY_GAME } = await loadWith({});
-    for (const g of GAME_KINDS) expect(MAX_PLAYERS_BY_GAME[g]).toBe(MAX_PLAYERS);
+    for (const g of BOOTH_GAMES) expect(MAX_PLAYERS_BY_GAME[g]).toBe(MAX_PLAYERS);
   });
 
-  it('MAX_PLAYERS đặt mặc định cho TẤT CẢ các trò', async () => {
+  it('MAX_PLAYERS đặt mặc định cho các trò ở booth', async () => {
     const { MAX_PLAYERS_BY_GAME } = await loadWith({ MAX_PLAYERS: '8' });
-    for (const g of GAME_KINDS) expect(MAX_PLAYERS_BY_GAME[g]).toBe(8);
+    for (const g of BOOTH_GAMES) expect(MAX_PLAYERS_BY_GAME[g]).toBe(8);
   });
 
   it('MAX_PLAYERS_<TRÒ> đè lên mặc định, chỉ riêng trò đó', async () => {
@@ -66,5 +76,48 @@ describe('config — số người tối đa mỗi trò', () => {
     const { MAX_PLAYERS_BY_GAME } = await loadWith({ MAX_PLAYERS: '999', MAX_PLAYERS_SPOT: '6' });
     expect(MAX_PLAYERS_BY_GAME.math).toBe(MAX_PLAYERS);
     expect(MAX_PLAYERS_BY_GAME.spot).toBe(6);
+  });
+});
+
+describe('config — Ai là triệu phú (cả khán phòng)', () => {
+  it('mặc định 50 người, KHÔNG theo MAX_PLAYERS chung', async () => {
+    const { MAX_PLAYERS_BY_GAME } = await loadWith({ MAX_PLAYERS: '5' });
+    expect(MAX_PLAYERS_BY_GAME.quiz).toBe(MAX_PLAYERS_DEFAULT_QUIZ);
+    expect(MAX_PLAYERS_DEFAULT_QUIZ).toBe(50);
+  });
+
+  it('MAX_PLAYERS_QUIZ đè được, và trần là 50 chứ không phải 20', async () => {
+    const ok = await loadWith({ MAX_PLAYERS_QUIZ: String(MAX_PLAYERS_CAP_QUIZ) });
+    expect(ok.MAX_PLAYERS_BY_GAME.quiz).toBe(50);
+
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    const over = await loadWith({ MAX_PLAYERS_QUIZ: String(MAX_PLAYERS_CAP_QUIZ + 1) });
+    expect(over.MAX_PLAYERS_BY_GAME.quiz).toBe(MAX_PLAYERS_DEFAULT_QUIZ);
+    expect(warn).toHaveBeenCalled();
+  });
+
+  it('các trò khác vẫn bị trần 20 — nâng trần của quiz không làm lỏng chúng', async () => {
+    vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    const { MAX_PLAYERS_BY_GAME } = await loadWith({ MAX_PLAYERS_MATH: '30' });
+    expect(MAX_PLAYERS_BY_GAME.math).toBe(MAX_PLAYERS);
+  });
+});
+
+describe('config — số người mỗi đội của Ai là triệu phú', () => {
+  it('không đặt gì thì mặc định 3', async () => {
+    const { QUIZ_TEAM_SIZE } = await loadWith({});
+    expect(QUIZ_TEAM_SIZE).toBe(3);
+  });
+
+  it('QUIZ_TEAM_SIZE đặt được trong 2–10', async () => {
+    expect((await loadWith({ QUIZ_TEAM_SIZE: '2' })).QUIZ_TEAM_SIZE).toBe(2);
+    expect((await loadWith({ QUIZ_TEAM_SIZE: '10' })).QUIZ_TEAM_SIZE).toBe(10);
+  });
+
+  it.each(['1', '11', 'ba', '2.5'])('giá trị hỏng "%s" → cảnh báo và dùng mặc định, không sập', async (raw) => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    const { QUIZ_TEAM_SIZE } = await loadWith({ QUIZ_TEAM_SIZE: raw });
+    expect(QUIZ_TEAM_SIZE).toBe(3);
+    expect(warn).toHaveBeenCalled();
   });
 });

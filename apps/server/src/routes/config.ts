@@ -11,8 +11,9 @@
  */
 import type { FastifyInstance } from 'fastify';
 import { SIGNUP_FORM_URL, SIGNUP_NAME_ENTRY } from '../config.js';
-import { getActiveGame, getMaxPlayers } from '../store/store.js';
+import { getActiveGame, getMaxPlayers, getQuizTeamSize } from '../store/store.js';
 import type { GameKind } from '../store/types.js';
+import { getQuizBankInfo } from '../services/quiz-bank-store.js';
 
 export interface ClientConfig {
   /** Rỗng = chưa cấu hình → client KHÔNG hiện nút đăng ký. */
@@ -26,6 +27,10 @@ export interface ClientConfig {
   activeGame: GameKind | null;
   /** Số người tối đa mỗi lượt, theo từng trò — BTC chỉnh ở /admin. */
   maxPlayers: Record<GameKind, number>;
+  /** Số câu của bộ Ai là triệu phú đang dùng — trang chủ ghi "N câu · 15s/câu". */
+  quizQuestionCount: number;
+  /** Số người mỗi đội của Ai là triệu phú — BTC chỉnh ở /admin. */
+  quizTeamSize: number;
   serverNow: number;
 }
 
@@ -35,6 +40,8 @@ export async function configRoutes(app: FastifyInstance): Promise<void> {
     signupNameEntry: SIGNUP_NAME_ENTRY,
     activeGame: getActiveGame(),
     maxPlayers: getMaxPlayers(),
+    quizQuestionCount: getQuizBankInfo().count,
+    quizTeamSize: getQuizTeamSize(),
     serverNow: Date.now(),
   }));
 }

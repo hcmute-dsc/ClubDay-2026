@@ -12,6 +12,7 @@ import { MathGame } from './MathGame'; // TRACK A
 import { DrawGame } from './DrawGame'; // TRACK B
 import { MemoryGame } from './MemoryGame'; // TRACK C
 import { SpotGame } from './SpotGame'; // TRACK D
+import { QuizGame } from './QuizGame'; // TRACK E
 import {
   DURATION_MS,
   SCORE_LABEL,
@@ -40,6 +41,7 @@ const SCREENS: Record<GameKind, ComponentType<GameProps>> = {
   draw: DrawGame,
   memory: MemoryGame,
   spot: SpotGame,
+  quiz: QuizGame,
 };
 
 /**
@@ -107,7 +109,9 @@ export function Play() {
         </div>
       </div>
 
-      <Countdown endsAt={state.endsAt} total={DURATION_MS[state.game]} />
+      {/* Ai là triệu phú không có đồng hồ chung của cả lượt: mỗi câu một đồng hồ riêng,
+          do chính màn hình QuizGame vẽ. */}
+      {state.game !== 'quiz' && <Countdown endsAt={state.endsAt} total={DURATION_MS[state.game]} />}
 
       {!playerId ? (
         <div role="alert" className="card border-warn bg-warn/10 p-4 text-sm">

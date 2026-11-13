@@ -26,7 +26,16 @@ if (envFile) {
   }
 }
 
-import { GAME_KINDS, MAX_PLAYERS, MAX_PLAYERS_CAP, type GameKind } from './store/types.js';
+import {
+  GAME_KINDS,
+  MAX_PLAYERS,
+  MAX_PLAYERS_DEFAULT_QUIZ,
+  QUIZ_TEAM_SIZE_DEFAULT,
+  QUIZ_TEAM_SIZE_MAX,
+  QUIZ_TEAM_SIZE_MIN,
+  maxPlayersCap,
+  type GameKind,
+} from './store/types.js';
 
 export const PORT = Number(process.env.PORT ?? 8787);
 export const HOST = process.env.HOST ?? '0.0.0.0';
@@ -34,6 +43,11 @@ export const ADMIN_TOKEN = process.env.ADMIN_TOKEN ?? '';
 export const MODEL_CACHE_DIR = process.env.MODEL_CACHE_DIR ?? './models';
 export const MODEL_OFFLINE = process.env.MODEL_OFFLINE === '1';
 export const SNAPSHOT_FILE = process.env.SNAPSHOT_FILE ?? 'data/rounds.json';
+/**
+ * Nơi lưu bộ câu hỏi Ai là triệu phú do BTC import. Nằm trong `data/` nên ăn theo
+ * volume của Docker — server restart không làm mất bộ đề vừa soạn.
+ */
+export const QUIZ_BANK_FILE = process.env.QUIZ_BANK_FILE ?? 'data/quiz-questions.json';
 
 /**
  * Link Google Form đăng ký thành viên — hiện thành nút ở màn kết quả.
@@ -71,24 +85,44 @@ function readMaxPlayers(): Record<GameKind, number> {
   const out = {} as Record<GameKind, number>;
   for (const game of GAME_KINDS) {
     const key = `MAX_PLAYERS_${game.toUpperCase()}`;
-    out[game] = clampPlayers(process.env[key], key, fallback);
+    // Ai là triệu phú KHÔNG theo `MAX_PLAYERS` chung: đó là con số cho các trò theo
+    // lượt ở booth (vài người), còn trò này là cả khán phòng. Đặt MAX_PLAYERS=5 mà
+    // kéo luôn trò này xuống 5 người là một cái bẫy im lặng.
+    const base = game === 'quiz' ? MAX_PLAYERS_DEFAULT_QUIZ : fallback;
+    out[game] = clampPlayers(process.env[key], key, base, game);
   }
   return out;
 }
 
-function clampPlayers(raw: string | undefined, key: string, fallback: number): number {
+function clampPlayers(raw: string | undefined, key: string, fallback: number, game?: GameKind): number {
   if (raw === undefined || raw.trim() === '') return fallback;
+  // `MAX_PLAYERS` chung áp cho các trò thường nên kiểm theo trần của chúng.
+  const cap = maxPlayersCap(game ?? 'math');
   const n = Number(raw);
-  if (!Number.isInteger(n) || n < 1 || n > MAX_PLAYERS_CAP) {
-    console.warn(
-      `  ⚠️  ${key}="${raw}" không hợp lệ (cần số nguyên 1–${MAX_PLAYERS_CAP}) — dùng ${fallback}.`,
-    );
+  if (!Number.isInteger(n) || n < 1 || n > cap) {
+    console.warn(`  ⚠️  ${key}="${raw}" không hợp lệ (cần số nguyên 1–${cap}) — dùng ${fallback}.`);
     return fallback;
   }
   return n;
 }
 
 export const MAX_PLAYERS_BY_GAME: Record<GameKind, number> = readMaxPlayers();
+
+/** Số người mỗi đội của Ai là triệu phú lúc khởi động; BTC chỉnh tiếp ở /admin. */
+function readQuizTeamSize(): number {
+  const raw = process.env.QUIZ_TEAM_SIZE;
+  if (raw === undefined || raw.trim() === '') return QUIZ_TEAM_SIZE_DEFAULT;
+  const n = Number(raw);
+  if (!Number.isInteger(n) || n < QUIZ_TEAM_SIZE_MIN || n > QUIZ_TEAM_SIZE_MAX) {
+    console.warn(
+      `  ⚠️  QUIZ_TEAM_SIZE="${raw}" không hợp lệ (cần số nguyên ${QUIZ_TEAM_SIZE_MIN}–${QUIZ_TEAM_SIZE_MAX}) — dùng ${QUIZ_TEAM_SIZE_DEFAULT}.`,
+    );
+    return QUIZ_TEAM_SIZE_DEFAULT;
+  }
+  return n;
+}
+
+export const QUIZ_TEAM_SIZE = readQuizTeamSize();
 
 /** Cảnh báo to nếu chưa đặt ADMIN_TOKEN — trang /admin sẽ không được bảo vệ. */
 export function warnIfInsecure(): void {
