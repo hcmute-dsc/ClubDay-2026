@@ -8,7 +8,7 @@ Web 5 trò chơi cho sự kiện CLB. Bốn trò đầu chơi theo lượt ở b
 | **Vẽ hình nhanh** | 15 giây | Vẽ theo từ khoá rồi **bấm NỘP BÀI** để AI chấm — hết giờ thì tự nộp |
 | **Nhớ nhanh** | 60 giây | Nhìn chuỗi ô nháy sáng rồi lặp lại. **Điểm = cấp cao nhất vượt được** |
 | **Ô khác màu** | 45 giây | Tìm ô lệch màu trong lưới. Mỗi cấp lưới dày thêm và màu sát nhau hơn. **Điểm = cấp cao nhất vượt được** |
-| **Ai là triệu phú** | 40 câu × 15 giây | Chơi **theo đội**: máy chiếu chỉ hiện câu hỏi, các đáp án bị **chia nhỏ** cho từng thành viên nên phải đọc to cho nhau; đội trưởng (xoay vòng) mới chốt được. **Chốt càng nhanh điểm càng cao** (600–1000/câu), mỗi đội có 2 quyền trợ giúp: 50:50 và x2 |
+| **Ai là triệu phú** | 40 câu × 20 giây | Chơi **theo đội**: máy chiếu chỉ hiện câu hỏi, các đáp án bị **chia nhỏ** cho từng thành viên nên phải đọc to cho nhau; đội trưởng (xoay vòng) mới chốt được. **Chốt càng nhanh điểm càng cao** (600–1000/câu), mỗi đội có 2 quyền trợ giúp: 50:50 và x2 |
 
 ---
 
@@ -22,7 +22,7 @@ Khác bốn trò kia: **cả phòng đi cùng nhau từng câu**, BTC là ngư�
 2. BTC đặt **số người mỗi đội** (2–10, mặc định 3, hoặc `QUIZ_TEAM_SIZE`) ở ô *Ai là triệu phú* trong `/admin`. Chỉnh được cả khi phòng chờ đã có người.
 3. Người chơi quét QR, nhập tên, chờ ở phòng chờ (phòng chờ ghi rõ "mỗi đội N người, chia ngẫu nhiên khi bắt đầu").
 4. BTC bấm **Bắt đầu**: server **chia ngẫu nhiên** người chơi thành các đội (sĩ số lệch nhau tối đa 1, ví dụ 7 người, đội 3 → 4 + 3). Mỗi đội có tên + màu riêng; điện thoại hiện đội của mình và các thành viên để tìm nhau.
-5. Mỗi câu có **15 giây**; máy chiếu hiện **câu hỏi**, đồng hồ lớn và đội nào đã chốt — **không** hiện bốn đáp án. Đáp án chỉ hiện sau khi công bố.
+5. Mỗi câu có **20 giây**; máy chiếu hiện **câu hỏi**, đồng hồ lớn và đội nào đã chốt — **không** hiện bốn đáp án. Đáp án chỉ hiện sau khi công bố.
 6. Hết giờ — hoặc mọi đội đã chốt, hoặc BTC bấm **Công bố đáp án** — đáp án đúng, số đội chọn từng ô và một câu giải thích được hiện ra, điểm được cộng cho từng đội.
 7. BTC bấm **Câu tiếp theo** (hoặc **Phím cách**; một nút duy nhất đổi nghĩa theo pha). Sau câu cuối lượt kết thúc và ra bảng xếp hạng đội chung cuộc.
 
@@ -36,7 +36,7 @@ Khác bốn trò kia: **cả phòng đi cùng nhau từng câu**, BTC là ngư�
 
 → Muốn chốt đúng, các thành viên phải **đọc to phần mình thấy, ghép lại, bàn rồi đội trưởng mới bấm**. Đội 1 người (chỉ xảy ra khi phòng quá ít người) thì tự đọc được cả bốn.
 
-**Chấm điểm** — mỗi câu đúng được `600 + 400 × (thời gian còn lại / 15s)`: chọn ngay giây đầu được **1000**, chọn giây cuối vẫn được **600**; sai hoặc bỏ trống **0**. Điểm giảm dần liên tục theo thời gian đã dùng, và điện thoại hiện luôn "chốt ngay bây giờ: +N điểm" để người chơi thấy thời gian là tiền. Chốt là **chốt**, không đổi được. Điểm thuộc về **cả đội**: mọi thành viên cùng điểm và cùng hạng. Công thức nằm ở `quizPoints` trong `@clubday/contract`, dùng chung cho server chấm và client hiển thị.
+**Chấm điểm** — mỗi câu đúng được `600 + 400 × (thời gian còn lại / 20s)`: chọn ngay giây đầu được **1000**, chọn giây cuối vẫn được **600**; sai hoặc bỏ trống **0**. Điểm giảm dần liên tục theo thời gian đã dùng, và điện thoại hiện luôn "chốt ngay bây giờ: +N điểm" để người chơi thấy thời gian là tiền. Chốt là **chốt**, không đổi được. Điểm thuộc về **cả đội**: mọi thành viên cùng điểm và cùng hạng. Công thức nằm ở `quizPoints` trong `@clubday/contract`, dùng chung cho server chấm và client hiển thị.
 
 **2 quyền trợ giúp** — mỗi **đội** **mỗi quyền một lần** trong cả lượt (đội trưởng bấm; đổi đội trưởng cũng không hồi lại), phải dùng *trước* khi chốt đáp án:
 

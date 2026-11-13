@@ -112,7 +112,7 @@ export const SPOT_MAX_SIZE = 6;
 /** Số câu mỗi lượt. */
 export const QUIZ_QUESTION_COUNT = 40;
 /** Thời gian trả lời mỗi câu. Server chấm theo đúng con số này, client đếm ngược theo nó. */
-export const QUIZ_QUESTION_MS = 15_000;
+export const QUIZ_QUESTION_MS = 20_000;
 /** Số đáp án mỗi câu: A, B, C, D. */
 export const QUIZ_OPTION_COUNT = 4;
 export const QUIZ_OPTION_LETTERS = ['A', 'B', 'C', 'D'] as const;
